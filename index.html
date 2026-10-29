@@ -34,6 +34,7 @@
   --r: 22px;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px calc(110px + env(safe-area-inset-bottom, 0px)); }
@@ -197,6 +198,60 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
   .sp-l1, .sp-l2 { stroke-dashoffset: 0; }
   #splash.fuera .sp-logo { transform: none; }
 }
+/* Mi Mes */
+.top-der { display: flex; align-items: center; gap: 8px; }
+.btn-ic { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); font-size: 22px; display: grid; place-items: center; flex: none; }
+.mes-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mes-nav h2 { font-size: 21px; }
+.rm-fila { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rm-dato { display: grid; gap: 2px; background: none; border: 0; padding: 0; text-align: left; min-width: 0; }
+.rm-dato .v { font-family: var(--f-display); font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.rm-sobra { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 16px; border-radius: 16px; font-weight: 700; }
+.rm-sobra b { font-family: var(--f-display); font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.rm-sobra.bien { background: var(--good-bg); color: var(--good); }
+.rm-sobra.riesgo { background: var(--bad-bg); color: var(--bad); }
+.pago { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 34px; gap: 12px; align-items: center; padding: 12px 6px; border-radius: 14px; cursor: pointer; transition: opacity .3s, transform .3s; }
+.pago:hover, .pago:focus-visible { background: var(--surface-2); }
+.pago .nom { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pago .meta { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pago .m { font-family: var(--f-display); font-weight: 700; }
+.pago.saliendo { opacity: 0; transform: translateX(48px); }
+.pago.hecho { cursor: default; }
+.pago.hecho .nom { color: var(--ink-2); }
+.prio { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.prio.urgente { background: var(--bad); }
+.prio.importante { background: var(--warn); }
+.prio.normal { box-shadow: inset 0 0 0 2px var(--muted); }
+.prio.hecho { background: var(--lima); }
+.atr { color: var(--bad); font-weight: 700; }
+.check { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: none; position: relative; padding: 0; transition: background .2s, border-color .2s, transform .2s; }
+.check::after { content: ""; position: absolute; left: 10px; top: 5px; width: 8px; height: 15px; border: solid var(--muted); border-width: 0 3px 3px 0; transform: rotate(45deg); opacity: .35; }
+.check:hover::after { opacity: 1; }
+.check.on { background: var(--lima); border-color: var(--lima); transform: scale(1.08); }
+.check.on::after { border-color: var(--lima-ink); opacity: 1; }
+.grupo-cab { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 12px 6px 2px; }
+.pagados-cab { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 16px; gap: 10px; align-items: center; background: none; border: 0; padding: 0; text-align: left; width: 100%; }
+.ok-ic { width: 28px; height: 28px; border-radius: 50%; background: var(--good-bg); color: var(--lima); display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+.flecha { color: var(--muted); }
+.mini-btn { border: 0; background: var(--surface-2); color: var(--lima); font-weight: 700; font-size: 12px; border-radius: 99px; padding: 6px 11px; }
+.tocable { cursor: pointer; }
+.trofeo { font-weight: 800; color: var(--warn); }
+.logros { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.logros li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: center; }
+.logros li div { display: grid; min-width: 0; }
+.leyenda .prio { margin-right: 4px; vertical-align: 0; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 99px; background: var(--surface-2); font-size: 14px; color: var(--ink); cursor: pointer; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip:has(input:checked) { box-shadow: inset 0 0 0 2px var(--lima); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--lima); outline-offset: 2px; }
+.ayuda { font-size: 12px; color: var(--muted); }
+.cta { width: 100%; border: 0; text-align: left; color: var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.flecha-der { font-size: 26px; color: var(--lima); }
+.mini-pago { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
+.mini-pago .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.confeti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+@media (prefers-reduced-motion: reduce) { .pago, .check { transition: none; } }
 </style>
 
 <div id="splash" aria-hidden="true"><div class="sp-logo"><svg viewBox="0 0 24 24"><path class="sp-l1" d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path class="sp-l2" d="M15 8h5v5"/></svg></div></div>
@@ -207,7 +262,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
       <span class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10290a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span>
       <h1>Mis Gastos</h1>
     </div>
-    <span class="chip-estado" id="estado">Cargando…</span>
+    <div class="top-der"><span class="chip-estado" id="estado">Cargando…</span>
+      <button class="btn-ic" data-tab="ajustes" aria-label="Ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div>
   </header>
   <main id="vista" class="vista"><p class="vacio">Cargando tus gastos…</p></main>
 </div>
@@ -215,10 +271,10 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 <nav class="tabbar" aria-label="Secciones">
   <div class="tabbar-in" role="tablist">
     <button role="tab" data-tab="resumen" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
+    <button role="tab" data-tab="mimes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 1.5 1.5L8 6M4 13l1.5 1.5L8 12M11 7h9M11 13h9M11 19h9"/></svg>Mi Mes</button>
     <button role="tab" data-tab="movimientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h14M7 12h14M7 17h14M3 7h.01M3 12h.01M3 17h.01"/></svg>Movimientos</button>
     <button role="tab" data-tab="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Análisis</button>
     <button role="tab" data-tab="credito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>Crédito</button>
-    <button role="tab" data-tab="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Ajustes</button>
   </div>
 </nav>
 
@@ -509,8 +565,180 @@ function datosDemo(hoy) {
 }
 </script>
 
+<script id="plan">
+// Mi Mes: lógica pura (sin DOM). Lo prueba test/test.js.
+var PRIORIDADES = ['urgente', 'importante', 'normal'];
+var GRUPOS_BASE = ['Vivir', 'Impuestos', 'Tarjetas', 'Plazos', 'Personas', 'Suscripciones', 'Otros'];
+
+function mesesEntre(a, b) { return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
+function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isNaN(n) ? 0 : n; }
+function ingresoMes(cfg, M) { return num(cfg['ingreso_' + M]) || num(cfg.ingreso_mensual); }
+
+// Lo gastado con crédito en un mes (opcionalmente de una cuenta)
+function gastoTarjeta(movs, cuenta, mes) {
+  return redondear(suma(movs.filter(function (m) {
+    return esGasto(m) && m.metodo === 'credito' && mesDe(m.fecha) === mes && (!cuenta || m.cuenta === cuenta);
+  }), function (m) { return m.monto; }));
+}
+
+/** Lo que el ítem pide en el mes M, o null si ese mes no toca. */
+function ocurrencia(item, M, ctx) {
+  if (!item.mes_inicio) return null;
+  var d = mesesEntre(item.mes_inicio, M);
+  if (d < 0) return null;
+  var o = { item: item, mes: M, monto: num(item.monto), n: null, estimado: false, atrasado: false };
+  if (item.tipo === 'unico') {
+    if (d !== 0) return null;
+  } else if (item.tipo === 'cuotas') {
+    var n = num(item.pagadas_previas) + d + 1;
+    if (n > (num(item.cuotas_total) || 1)) return null;
+    o.n = n;
+  } else if (item.tipo === 'tarjeta') {
+    // La factura de M son las compras con tarjeta de M-1, si ya las estabas registrando
+    var prev = sumarMes(M, -1);
+    if (prev >= item.mes_inicio) o.monto = gastoTarjeta(ctx.movs, item.cuenta, prev);
+    else o.estimado = true;
+  }
+  o.pago = ctx.pagos.filter(function (p) { return p.item === item.id && p.mes === M; })[0] || null;
+  return o;
+}
+
+/** El mes M: qué hay por pagar, qué ya se pagó, cuánto sobra. En el mes actual suma lo atrasado. */
+function vistaMes(d, M, mesHoy) {
+  var ctx = { movs: d.movs || [], pagos: d.pagos || [] };
+  var occ = [];
+  (d.plan || []).forEach(function (it) {
+    var o = ocurrencia(it, M, ctx);
+    if (o) occ.push(o);
+    if (M === mesHoy && it.mes_inicio) {
+      for (var X = it.mes_inicio; X < M; X = sumarMes(X, 1)) {
+        var a = ocurrencia(it, X, ctx);
+        if (a && !a.pago) { a.atrasado = true; occ.push(a); }
+      }
+    }
+  });
+  var entra = ingresoMes(d.cfg || {}, M);
+  var pagar = redondear(suma(occ, function (o) { return o.monto; }));
+  var pagados = occ.filter(function (o) { return o.pago; });
+  var pagado = redondear(suma(pagados, function (o) { return o.monto; }));
+  return {
+    mes: M, entra: entra, pagar: pagar, pagado: pagado,
+    falta: redondear(pagar - pagado), sobra: redondear(entra - pagar),
+    pct: pagar ? pagado / pagar : 0,
+    porPagar: occ.filter(function (o) { return !o.pago; }),
+    pagados: pagados.sort(function (a, b) { return String(b.pago.fecha).localeCompare(String(a.pago.fecha)); }),
+    tarjeta: { tope: num((d.cfg || {}).tope_tarjeta_mes), gastado: gastoTarjeta(ctx.movs, '', M) }
+  };
+}
+
+/** prioridad: urgentes → importantes → normales, cada uno de mayor a menor. monto: todo de mayor a menor. */
+function ordenarPagos(lista, modo) {
+  return lista.slice().sort(function (a, b) {
+    if (modo === 'prioridad') {
+      var pa = PRIORIDADES.indexOf(a.item.prioridad), pb = PRIORIDADES.indexOf(b.item.prioridad);
+      if (pa < 0) pa = 2; if (pb < 0) pb = 2;
+      if (pa !== pb) return pa - pb;
+    }
+    return b.monto - a.monto;
+  });
+}
+/** Grupos ordenados por su total (mayor primero) y dentro de cada uno de mayor a menor. */
+function agruparPagos(lista) {
+  var g = {};
+  lista.forEach(function (o) { var k = o.item.grupo || 'Otros'; (g[k] = g[k] || []).push(o); });
+  return Object.keys(g).map(function (k) {
+    return { grupo: k, total: redondear(suma(g[k], function (o) { return o.monto; })), items: ordenarPagos(g[k], 'monto') };
+  }).sort(function (a, b) { return b.total - a.total; });
+}
+
+/** Deudas = ítems en cuotas. Cada pago registrado suma una cuota. */
+function resumenDeudas(d) {
+  var lista = (d.plan || []).filter(function (it) { return it.tipo === 'cuotas'; }).map(function (it) {
+    var pagos = (d.pagos || []).filter(function (p) { return p.item === it.id; });
+    var total = num(it.cuotas_total) || 1, hechas = Math.min(total, num(it.pagadas_previas) + pagos.length);
+    var ult = pagos.map(function (p) { return String(p.fecha); }).sort().pop() || '';
+    return { item: it, total: total, hechas: hechas, falta: redondear((total - hechas) * num(it.monto)),
+      deuda: redondear(total * num(it.monto)), terminada: hechas >= total, fecha: ult };
+  });
+  var deuda = suma(lista, function (x) { return x.deuda; }), falta = suma(lista, function (x) { return x.falta; });
+  return {
+    activas: lista.filter(function (x) { return !x.terminada; }).sort(function (a, b) { return b.falta - a.falta; }),
+    terminadas: lista.filter(function (x) { return x.terminada; }),
+    falta: redondear(falta), pct: deuda ? 1 - falta / deuda : 0
+  };
+}
+
+/** Los próximos n meses: cuánto entra, cuánto hay que pagar y cuánto sobra. */
+function miAnio(d, desde, n) {
+  var ctx = { movs: d.movs || [], pagos: d.pagos || [] }, filas = [];
+  for (var i = 0; i < n; i++) {
+    var M = sumarMes(desde, i), occ = [];
+    (d.plan || []).forEach(function (it) { var o = ocurrencia(it, M, ctx); if (o) occ.push(o); });
+    var entra = ingresoMes(d.cfg || {}, M), pagar = redondear(suma(occ, function (o) { return o.monto; }));
+    filas.push({ mes: M, entra: entra, pagar: pagar, sobra: redondear(entra - pagar),
+      pagado: redondear(suma(occ.filter(function (o) { return o.pago; }), function (o) { return o.monto; })) });
+  }
+  return filas;
+}
+
+/** Metas cumplidas: deudas terminadas y sueños logrados, lo más nuevo primero. */
+function metasCumplidas(d) {
+  var r = resumenDeudas(d).terminadas.map(function (x) {
+    return { tipo: 'deuda', titulo: x.item.nombre, detalle: 'Deuda pagada · R$ ' + Math.round(x.deuda).toLocaleString('pt-BR'), fecha: x.fecha };
+  });
+  (d.suenos || []).forEach(function (s) {
+    if (num(s.ahorrado) >= num(s.precio) && num(s.precio) > 0) {
+      r.push({ tipo: 'sueno', titulo: (s.emoji ? s.emoji + ' ' : '') + s.nombre, detalle: 'Sueño cumplido · R$ ' + Math.round(num(s.precio)).toLocaleString('pt-BR'), fecha: s.cumplido || '' });
+    }
+  });
+  return r.sort(function (a, b) { return String(b.fecha).localeCompare(String(a.fecha)); });
+}
+
+/** Plan de ejemplo (inventado) para ver Mi Mes sin conectar nada. */
+function planDemo(hoy) {
+  var M = mesDe(hoy), ant = sumarMes(M, -1);
+  var it = function (id, nombre, monto, grupo, tipo, prioridad, extra) {
+    var o = { id: id, nombre: nombre, monto: monto, grupo: grupo, tipo: tipo, prioridad: prioridad, mes_inicio: ant };
+    for (var c in (extra || {})) o[c] = extra[c];
+    return o;
+  };
+  return {
+    plan: [
+      it('e1', 'Alquiler', 4550.78, 'Vivir', 'fijo', 'importante'),
+      it('e2', 'Condominio', 895.11, 'Vivir', 'fijo', 'importante'),
+      it('e3', 'Luz', 240, 'Vivir', 'fijo', 'normal'),
+      it('e4', 'Internet', 129.9, 'Vivir', 'fijo', 'normal'),
+      it('e5', 'Factura Nubank', 1800, 'Tarjetas', 'tarjeta', 'importante', { cuenta: 'Nubank', mes_inicio: M }),
+      it('e6', 'DAS (impuesto)', 483.33, 'Impuestos', 'fijo', 'urgente'),
+      it('e7', 'Préstamo', 944.92, 'Plazos', 'cuotas', 'importante', { cuotas_total: 4, pagadas_previas: 0 }),
+      it('e8', 'Pix a un amigo', 600, 'Personas', 'cuotas', 'normal', { cuotas_total: 3, pagadas_previas: 1 }),
+      it('e9', 'Curso online', 300, 'Otros', 'cuotas', 'normal', { cuotas_total: 2, pagadas_previas: 0, mes_inicio: sumarMes(M, -2) })
+    ],
+    pagos: [
+      { id: 'q1', item: 'e1', mes: ant, monto: 4550.78, fecha: ant + '-05', cuota: '' },
+      { id: 'q2', item: 'e2', mes: ant, monto: 895.11, fecha: ant + '-10', cuota: '' },
+      { id: 'q3', item: 'e3', mes: ant, monto: 240, fecha: ant + '-12', cuota: '' },
+      { id: 'q4', item: 'e4', mes: ant, monto: 129.9, fecha: ant + '-12', cuota: '' },
+      { id: 'q5', item: 'e6', mes: ant, monto: 483.33, fecha: ant + '-20', cuota: '' },
+      { id: 'q6', item: 'e7', mes: ant, monto: 944.92, fecha: ant + '-25', cuota: 1 },
+      { id: 'q7', item: 'e8', mes: ant, monto: 600, fecha: ant + '-15', cuota: 2 },
+      { id: 'q8', item: 'e9', mes: sumarMes(M, -2), monto: 300, fecha: sumarMes(M, -2) + '-08', cuota: 1 },
+      { id: 'q9', item: 'e9', mes: ant, monto: 300, fecha: ant + '-08', cuota: 2 },
+      { id: 'q10', item: 'e1', mes: M, monto: 4550.78, fecha: M + '-05', cuota: '' }
+    ],
+    suenos: [
+      { id: 's1', emoji: '🛋️', nombre: 'Sofá', precio: 3000, ahorrado: 1200, cumplido: '' },
+      { id: 's2', emoji: '📺', nombre: 'TV', precio: 3000, ahorrado: 0, cumplido: '' },
+      { id: 's3', emoji: '🎧', nombre: 'Audífonos', precio: 900, ahorrado: 900, cumplido: ant + '-28' }
+    ],
+    cfg: { ingreso_mensual: 14500, tope_tarjeta_mes: 3000 }
+  };
+}
+</script>
+
 <script id="app">
-var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '' };
+var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '',
+  plan: [], pagos: [], suenos: [], mesPlan: '', planOrden: 'prioridad', verPagados: false };
 var hoy = (function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })();
 var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 var MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -564,6 +792,7 @@ function llamar(fn) {
 function recibir(d) {
   S.movs = d.movimientos.sort(function (a, b) { return (b.fecha + b.hora).localeCompare(a.fecha + a.hora); });
   S.cfg = d.config || {}; S.categorias = d.categorias || CATS_DEFECTO; S.demo = false;
+  S.plan = d.plan || []; S.pagos = d.pagos || []; S.suenos = d.suenos || [];
   $('#estado').textContent = S.movs.length + ' movimientos';
   render();
 }
@@ -588,7 +817,8 @@ function cargar() {
     return;
   }
   S.movs = datosDemo(hoy); S.demo = true; S.categorias = CATS_DEFECTO;
-  S.cfg = { ingreso_mensual: 14500, tope_tarjeta_mes: 2850 };
+  var P = planDemo(hoy);
+  S.plan = P.plan; S.pagos = P.pagos; S.suenos = P.suenos; S.cfg = P.cfg;
   $('#estado').textContent = 'Ejemplo';
   render();
 }
@@ -610,15 +840,16 @@ var ICO = {
   mas: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   subir: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>',
   barras: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>',
+  lista: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 1.5 1.5L8 6M4 13l1.5 1.5L8 12M11 7h9M11 13h9M11 19h9"/></svg>',
   tarjeta: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/></svg>'
 };
 function render() {
   document.querySelectorAll('.tabbar button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === S.tab); });
   var A = analizar(S.movs, S.cfg, hoy, S.periodo);
-  var titulos = { movimientos: 'Movimientos', analisis: 'Análisis', credito: 'Crédito', ajustes: 'Ajustes' };
+  var titulos = { mimes: 'Mi Mes', movimientos: 'Movimientos', analisis: 'Análisis', credito: 'Crédito', ajustes: 'Ajustes' };
   var html = S.demo ? '<div class="banner"><b>Datos de ejemplo.</b> Conéctala en Ajustes para ver tus compras reales.</div>' : '';
   if (titulos[S.tab]) html += '<h2 class="titulo-vista">' + titulos[S.tab] + '</h2>';
-  html += ({ resumen: vResumen, movimientos: vMovimientos, analisis: vAnalisis, credito: vCredito, ajustes: vAjustes })[S.tab](A);
+  html += ({ resumen: vResumen, mimes: vMiMes, movimientos: vMovimientos, analisis: vAnalisis, credito: vCredito, ajustes: vAjustes })[S.tab](A);
   $('#vista').innerHTML = html;
   quitarSplash();
 }
@@ -695,9 +926,9 @@ function vResumen(A) {
     '<section class="rapidas">' +
       rapida('data-accion="agregar"', 'Agregar', ICO.mas, true) +
       rapida('data-accion="importar"', 'Importar', ICO.subir) +
+      rapida('data-ir="mimes"', 'Mi Mes', ICO.lista) +
       rapida('data-ir="analisis"', 'Análisis', ICO.barras) +
-      rapida('data-ir="credito"', 'Crédito', ICO.tarjeta) +
-    '</section>' +
+    '</section>' + tarjetaMiMes() +
     '<section class="duo">' +
       '<div class="mini"><span class="eyebrow">Próximo mes</span><span class="v num">' + R0(p.total) + '</span><span class="small muted">' + (p.base ? 'entre ' + R0(p.min) + ' y ' + R0(p.max) : 'faltan meses de historia') + '</span></div>' +
       '<button class="mini" data-ir="credito"><span class="eyebrow">Crédito</span>' + gauge(c.puntaje, c.nivel) + '<span class="pill ' + c.nivel + '">' + c.etiqueta + '</span></button>' +
@@ -933,18 +1164,322 @@ function importar(file) {
     .catch(function (e) { aviso('No pude importar: ' + e.message); });
 }
 
+// ---------------------------------------------------------------- Mi Mes
+var NOMBRE_PRIO = { urgente: 'Urgente', importante: 'Importante', normal: 'Normal' };
+var TIPOS = { fijo: 'Fijo, cada mes', cuotas: 'En cuotas (deuda)', unico: 'Una sola vez', tarjeta: 'Factura de tarjeta' };
+function datosPlan() { return { plan: S.plan, pagos: S.pagos, suenos: S.suenos, movs: S.movs, cfg: S.cfg }; }
+function idNuevo() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function fechaCorta(f) { var p = String(f).slice(0, 10).split('-'); return p.length === 3 ? +p[2] + ' ' + MESES[+p[1] - 1] + ' ' + p[0] : f; }
+function noCumplido(s) { return !(num(s.precio) > 0 && num(s.ahorrado) >= num(s.precio)); }
+function montoTexto(n) { return n ? String(n).replace('.', ',') : ''; }
+
+function vMiMes() {
+  var mesHoy = mesDe(hoy), M = S.mesPlan || mesHoy, d = datosPlan();
+  var nav = '<div class="mes-nav"><button class="btn-ic" data-accion="mes-ant" aria-label="Mes anterior">‹</button><h2>' + cap(nomMes(M, true)) +
+    '</h2><button class="btn-ic" data-accion="mes-sig" aria-label="Mes siguiente">›</button></div>';
+  if (!S.plan.length) {
+    return nav + '<section class="card"><h2>Arma tu mes</h2><p class="muted" style="margin:0">Agrega lo que pagas cada mes: alquiler, cuentas, cuotas, personas. Marca ✓ cuando pagues y mira cuánto te sobra.</p><div class="acciones">' +
+      (conectado ? '<button class="btn prim" data-accion="sembrar">Cargar mi plan de Mi Dinero</button>' : '') +
+      '<button class="btn' + (conectado ? '' : ' prim') + '" data-accion="nuevo-item">＋ Agregar pago</button></div></section>';
+  }
+  var V = vistaMes(d, M, mesHoy), D = resumenDeudas(d), logros = metasCumplidas(d), sobra = V.sobra >= 0;
+  var html = nav +
+    '<section class="card">' +
+      '<div class="rm-fila"><button class="rm-dato" data-accion="editar-ingreso"><span class="eyebrow">Me entra ✎</span><span class="v num">' + R0(V.entra) + '</span></button>' +
+      '<div class="rm-dato"><span class="eyebrow">Tengo que pagar</span><span class="v num">' + R0(V.pagar) + '</span></div></div>' +
+      '<div class="rm-sobra ' + (sobra ? 'bien' : 'riesgo') + '"><span>' + (sobra ? 'Me sobra' : 'Me falta') + '</span><b class="num">' + R0(Math.abs(V.sobra)) + '</b></div>' +
+      '<div class="barra-mes"><i style="width:' + (V.pct * 100).toFixed(1) + '%"></i></div>' +
+      '<div class="barra-leg"><span>Pagado ' + R0(V.pagado) + '</span><span>Falta ' + R0(V.falta) + ' · ' + Math.round(V.pct * 100) + '%</span></div>' +
+    '</section>';
+
+  if (V.tarjeta.tope && M === mesHoy) {
+    var tg = V.tarjeta, pas = tg.gastado > tg.tope, pt = Math.min(1, tg.gastado / tg.tope);
+    html += '<section class="card"><div class="card-cab"><h2>Tarjeta este mes</h2><span class="pill ' + (pas ? 'riesgo' : pt > 0.8 ? 'atento' : 'bien') + '">' +
+      (pas ? 'Pasaste el tope' : 'Te quedan ' + R0(tg.tope - tg.gastado)) + '</span></div>' +
+      '<div class="barra-mes"><i style="width:' + (pt * 100).toFixed(1) + '%' + (pas ? ';background:var(--bad)' : '') + '"></i></div>' +
+      '<div class="barra-leg"><span>Llevas ' + R0(tg.gastado) + '</span><span>Tope ' + R0(tg.tope) + '</span></div>' +
+      '<p class="small muted" style="margin:0">Se paga en la factura del mes que viene.</p></section>';
+  }
+
+  html += '<section class="card"><div class="card-cab"><h2>Por pagar</h2><button class="link" data-accion="nuevo-item">＋ Agregar</button></div>' +
+    '<div class="segmento" role="group" aria-label="Orden">' + [['prioridad', 'Prioridad'], ['monto', 'Monto'], ['grupo', 'Grupo']].map(function (o) {
+      return '<button data-orden="' + o[0] + '" aria-pressed="' + (S.planOrden === o[0]) + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  if (!V.porPagar.length) html += '<p class="vacio">¡Todo pagado este mes! 🎉</p>';
+  else if (S.planOrden === 'grupo') {
+    html += agruparPagos(V.porPagar).map(function (g) {
+      return '<div class="grupo-cab"><span>' + esc(g.grupo) + '</span><span class="num">' + R0(g.total) + '</span></div><div class="lista">' + g.items.map(filaPago).join('') + '</div>';
+    }).join('');
+  } else html += '<div class="lista">' + ordenarPagos(V.porPagar, S.planOrden).map(filaPago).join('') + '</div>';
+  html += '<div class="leyenda"><span><span class="prio urgente"></span> Urgente</span><span><span class="prio importante"></span> Importante</span><span><span class="prio normal"></span> Normal</span></div></section>';
+
+  if (V.pagados.length) {
+    html += '<section class="card"><button class="pagados-cab" data-accion="ver-pagados" aria-expanded="' + !!S.verPagados + '"><span class="ok-ic">✓</span><h2>Pagados</h2>' +
+      '<span class="muted num">' + V.pagados.length + ' · ' + R0(V.pagado) + '</span><span class="flecha">' + (S.verPagados ? '▴' : '▾') + '</span></button>' +
+      (S.verPagados ? '<div class="lista">' + V.pagados.map(filaPagado).join('') + '</div>' : '') + '</section>';
+  }
+
+  if (D.activas.length) {
+    html += '<section class="card"><div class="card-cab"><h2>Deudas</h2><span class="small muted">Te faltan <b style="color:var(--ink)">' + R0(D.falta) + '</b></span></div>' +
+      '<div class="barra-mes"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div>' +
+      '<div class="barra-leg"><span>' + Math.round(D.pct * 100) + '% pagado</span><span>' + D.activas.length + ' activas · ' + D.terminadas.length + ' terminadas</span></div>' +
+      '<ul class="rank">' + D.activas.map(function (x) {
+        return '<li class="tocable" data-accion="editar-item" data-id="' + esc(x.item.id) + '"><span class="nom">' + esc(x.item.nombre) + '</span><span class="num">' + R0(x.falta) + '</span>' +
+          '<span class="pista"><i style="width:' + (x.hechas / x.total * 100).toFixed(1) + '%"></i></span><span class="det">' + x.hechas + ' de ' + x.total + ' cuotas · ' + R0(num(x.item.monto)) + ' c/u</span></li>';
+      }).join('') + '</ul></section>';
+  }
+
+  var activos = S.suenos.filter(noCumplido);
+  html += '<section class="card"><div class="card-cab"><h2>Sueños</h2><button class="link" data-accion="nuevo-sueno">＋ Nuevo</button></div>' +
+    (activos.length ? '<ul class="rank">' + activos.map(function (s) {
+      var pr = num(s.precio) ? num(s.ahorrado) / num(s.precio) : 0;
+      return '<li><span class="nom tocable" data-accion="editar-sueno" data-id="' + esc(s.id) + '">' + esc((s.emoji ? s.emoji + ' ' : '') + s.nombre) + '</span>' +
+        '<button class="mini-btn" data-accion="ahorrar" data-id="' + esc(s.id) + '">＋ Ahorro</button>' +
+        '<span class="pista"><i style="width:' + (pr * 100).toFixed(1) + '%"></i></span><span class="det">' + R0(num(s.ahorrado)) + ' de ' + R0(num(s.precio)) +
+        ' · faltan ' + R0(Math.max(0, num(s.precio) - num(s.ahorrado))) + '</span></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>') + '</section>';
+
+  html += '<section class="card"><div class="card-cab"><h2>Metas cumplidas</h2><span class="trofeo">🏆 ' + logros.length + '</span></div>' +
+    (logros.length ? '<ul class="logros">' + logros.map(function (l) {
+      return '<li><span class="ok-ic">✓</span><div><b>' + esc(l.titulo) + '</b><span class="small muted">' + esc(l.detalle) + (l.fecha ? ' · ' + fechaCorta(l.fecha) : '') + '</span></div></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>') + '</section>';
+
+  html += '<section class="card"><h2>Mi año</h2><div class="tabla-wrap"><table><thead><tr><th>Mes</th><th>Entra</th><th>Pagar</th><th>Sobra</th></tr></thead><tbody>' +
+    miAnio(d, mesHoy, 12).map(function (f) {
+      return '<tr><td>' + cap(nomMes(f.mes, true)) + '</td><td>' + R0(f.entra) + '</td><td>' + R0(f.pagar) + '</td><td style="color:' + (f.sobra >= 0 ? 'var(--good)' : 'var(--bad)') + '">' + R0(f.sobra) + '</td></tr>';
+    }).join('') + '</tbody></table></div></section>';
+  return html;
+}
+
+function filaPago(o) {
+  var it = o.item, meta = [esc(it.grupo || 'Otros')];
+  if (o.n) meta.push('cuota ' + o.n + '/' + (num(it.cuotas_total) || 1));
+  if (o.atrasado) meta.push('<span class="atr">atrasado de ' + MESES_L[+o.mes.slice(5, 7) - 1] + '</span>');
+  if (o.estimado) meta.push('estimado');
+  if (it.tipo === 'tarjeta' && !o.estimado) meta.push('según tus compras');
+  return '<div class="pago" data-accion="editar-item" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
+    '<span class="prio ' + esc(it.prioridad || 'normal') + '" title="' + (NOMBRE_PRIO[it.prioridad] || 'Normal') + '"></span>' +
+    '<span style="min-width:0"><span class="nom">' + esc(it.nombre) + '</span><span class="meta">' + meta.join(' · ') + '</span></span>' +
+    '<span class="m num">' + R(o.monto) + '</span>' +
+    '<button class="check" data-accion="pagar" data-id="' + esc(it.id) + '" data-mes="' + o.mes + '" data-n="' + (o.n || '') + '" data-monto="' + o.monto + '" aria-label="Marcar ' + esc(it.nombre) + ' como pagado"></button></div>';
+}
+function filaPagado(o) {
+  return '<div class="pago hecho"><span class="prio hecho"></span><span style="min-width:0"><span class="nom">' + esc(o.item.nombre) + '</span>' +
+    '<span class="meta">Pagado ' + fechaCorta(o.pago.fecha) + (o.n ? ' · cuota ' + o.n + '/' + (num(o.item.cuotas_total) || 1) : '') + '</span></span>' +
+    '<span class="m num">' + R(o.monto) + '</span><button class="check on" data-accion="desmarcar" data-pago="' + esc(o.pago.id) + '" aria-label="Desmarcar ' + esc(o.item.nombre) + '"></button></div>';
+}
+
+/** Tarjeta de Inicio: lo que falta pagar este mes y lo urgente. */
+function tarjetaMiMes() {
+  if (!S.plan.length) return '<button class="card cta" data-ir="mimes"><span><h2>Arma tu mes</h2><span class="small muted">Tus pagos, deudas y sueños en un solo lugar</span></span><span class="flecha-der">›</span></button>';
+  var V = vistaMes(datosPlan(), mesDe(hoy), mesDe(hoy));
+  var urg = ordenarPagos(V.porPagar, 'prioridad').slice(0, 3);
+  return '<button class="card cta" data-ir="mimes"><span style="min-width:0;display:grid;gap:6px;width:100%"><span class="card-cab"><h2>Por pagar este mes</h2><span class="num" style="font-weight:800">' + R0(V.falta) + '</span></span>' +
+    '<span class="barra-mes"><i style="width:' + (V.pct * 100).toFixed(1) + '%"></i></span>' +
+    (urg.length ? urg.map(function (o) { return '<span class="mini-pago"><span class="prio ' + esc(o.item.prioridad || 'normal') + '"></span><span class="nom">' + esc(o.item.nombre) + '</span><span class="num">' + R0(o.monto) + '</span></span>'; }).join('') : '<span class="small muted">Todo pagado 🎉</span>') +
+    '</span></button>';
+}
+
+// Guardar con respuesta inmediata en pantalla; si el servidor falla, se recarga lo real
+function tablaLocal(t) { return t === 'Plan' ? S.plan : t === 'Pagos' ? S.pagos : S.suenos; }
+function guardarEn(tabla, obj) {
+  var arr = tablaLocal(tabla), i = arr.findIndex(function (x) { return x.id === obj.id; });
+  if (i > -1) arr[i] = obj; else arr.push(obj);
+  render();
+  if (S.demo) return;
+  llamar('api_guardar', tabla, obj).catch(function (e) { aviso('No se guardó: ' + e.message); cargar(); });
+}
+function eliminarDe(tabla, id) {
+  var arr = tablaLocal(tabla), i = arr.findIndex(function (x) { return x.id === id; });
+  if (i > -1) arr.splice(i, 1);
+  render();
+  if (S.demo) return;
+  llamar('api_eliminar', tabla, id).catch(function (e) { aviso('No se borró: ' + e.message); cargar(); });
+}
+
+function pagar(t) {
+  var it = S.plan.filter(function (x) { return x.id === t.dataset.id; })[0];
+  if (!it) return;
+  var antes = resumenDeudas(datosPlan()).terminadas.length, fila = t.closest('.pago');
+  t.classList.add('on');
+  if (fila) fila.classList.add('saliendo');
+  setTimeout(function () {
+    guardarEn('Pagos', { id: idNuevo(), item: it.id, mes: t.dataset.mes, monto: num(t.dataset.monto), fecha: hoy, cuota: t.dataset.n });
+    if (resumenDeudas(datosPlan()).terminadas.length > antes) { confeti(); aviso('¡Deuda terminada: ' + it.nombre + '! 🎉'); }
+    else aviso('Pagado: ' + it.nombre);
+  }, sinMovimiento ? 0 : 340);
+}
+
+function abrirItem(id) {
+  var it = S.plan.filter(function (x) { return x.id === id; })[0] || { tipo: 'fijo', prioridad: 'normal', grupo: '', mes_inicio: S.mesPlan || mesDe(hoy) };
+  var grupos = GRUPOS_BASE.concat(S.plan.map(function (x) { return x.grupo; })).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
+  $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar pago' : 'Nuevo pago') + '</h2>' +
+    '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a Jonas…"></label>' +
+    '<label class="campo">Monto (R$)<input id="it-monto" inputmode="decimal" value="' + esc(montoTexto(it.monto)) + '" placeholder="450,00"></label>' +
+    '<label class="campo">Grupo<input id="it-grupo" list="lista-grupos" value="' + esc(it.grupo || '') + '" placeholder="Vivir, Personas…"><span class="ayuda">Elige uno o escribe un nombre nuevo para crear un grupo.</span></label>' +
+    '<datalist id="lista-grupos">' + grupos.map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
+    '<div class="campo">Prioridad<div class="chips">' + PRIORIDADES.map(function (p) {
+      return '<label class="chip"><input type="radio" name="it-prio" value="' + p + '"' + ((it.prioridad || 'normal') === p ? ' checked' : '') + '><span class="prio ' + p + '"></span>' + NOMBRE_PRIO[p] + '</label>';
+    }).join('') + '</div></div>' +
+    '<label class="campo">Tipo<select id="it-tipo">' + Object.keys(TIPOS).map(function (k) { return '<option value="' + k + '"' + (it.tipo === k ? ' selected' : '') + '>' + TIPOS[k] + '</option>'; }).join('') + '</select></label>' +
+    '<div id="it-cuotas" class="rm-fila"' + (it.tipo === 'cuotas' ? '' : ' hidden') + '><label class="campo">Total de cuotas<input id="it-total" inputmode="numeric" value="' + esc(it.cuotas_total || '') + '"></label>' +
+      '<label class="campo">Ya pagadas antes<input id="it-previas" inputmode="numeric" value="' + esc(it.pagadas_previas || 0) + '"></label></div>' +
+    '<label class="campo" id="it-cta"' + (it.tipo === 'tarjeta' ? '' : ' hidden') + '>Tarjeta<select id="it-cuenta">' + CUENTAS.map(function (c) { return '<option' + (it.cuenta === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>' +
+      '<span class="ayuda">El monto se calcula con tus compras con esa tarjeta del mes anterior. El que escribes arriba es el estimado del primer mes.</span></label>' +
+    '<label class="campo">Desde el mes<input id="it-mes" type="month" value="' + esc(it.mes_inicio || mesDe(hoy)) + '"></label>' +
+    '<label class="campo">Nota<input id="it-nota" value="' + esc(it.nota || '') + '" placeholder="Opcional"></label>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-item" data-id="' + esc(id || '') + '">Guardar</button><button class="btn" value="cancel">Cerrar</button>' +
+    (id ? '<button class="btn peligro" type="button" data-accion="borrar-item" data-id="' + esc(id) + '">Borrar</button>' : '') + '</div>';
+  $('#dlg').showModal();
+}
+function guardarItem(id) {
+  var previo = S.plan.filter(function (x) { return x.id === id; })[0] || {};
+  var prio = document.querySelector('input[name="it-prio"]:checked');
+  var obj = {
+    id: id || idNuevo(), nombre: $('#it-nombre').value.trim(), monto: num($('#it-monto').value.replace(/\.(?=\d{3}(\D|$))/g, '')),
+    grupo: $('#it-grupo').value.trim() || 'Otros', tipo: $('#it-tipo').value, prioridad: prio ? prio.value : 'normal',
+    mes_inicio: $('#it-mes').value || mesDe(hoy), cuotas_total: '', pagadas_previas: '', cuenta: '', nota: $('#it-nota').value.trim(), creado: previo.creado || ''
+  };
+  if (obj.tipo === 'cuotas') { obj.cuotas_total = Math.max(1, Math.round(num($('#it-total').value))); obj.pagadas_previas = Math.max(0, Math.round(num($('#it-previas').value))); }
+  if (obj.tipo === 'tarjeta') obj.cuenta = $('#it-cuenta').value;
+  if (!obj.nombre) { aviso('Escribe un nombre'); return; }
+  if (!(obj.monto > 0)) { aviso('Escribe el monto'); return; }
+  $('#dlg').close();
+  guardarEn('Plan', obj);
+  aviso(id ? 'Guardado' : 'Agregado a ' + obj.grupo);
+}
+function borrarItem(id) {
+  var b = document.querySelector('[data-accion="borrar-item"]');
+  if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = 'Toca de nuevo para borrar'; return; }
+  $('#dlg').close();
+  eliminarDe('Plan', id);
+  aviso('Borrado');
+}
+
+function abrirIngreso() {
+  var M = S.mesPlan || mesDe(hoy);
+  $('#dlg-form').innerHTML = '<h2>¿Cuánto te entra en ' + nomMes(M, true) + '?</h2>' +
+    '<label class="campo">Monto (R$)<input id="ing-monto" inputmode="decimal" value="' + esc(montoTexto(ingresoMes(S.cfg, M))) + '"></label>' +
+    '<p class="small muted" style="margin:0">Si no lo cambias, cada mes usa tu ingreso de Ajustes.</p>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-ingreso">Guardar</button><button class="btn" value="cancel">Cerrar</button></div>';
+  $('#dlg').showModal();
+}
+function guardarIngreso() {
+  var M = S.mesPlan || mesDe(hoy), cambio = {};
+  cambio['ingreso_' + M] = num($('#ing-monto').value.replace(/\.(?=\d{3}(\D|$))/g, ''));
+  $('#dlg').close();
+  S.cfg[('ingreso_' + M)] = cambio['ingreso_' + M];
+  render();
+  if (!S.demo) llamar('api_guardarConfig', cambio).catch(function (e) { aviso('No se guardó: ' + e.message); });
+}
+
+function abrirSueno(id) {
+  var s = S.suenos.filter(function (x) { return x.id === id; })[0] || { emoji: '✨', ahorrado: 0 };
+  $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar sueño' : 'Nuevo sueño') + '</h2>' +
+    '<div class="rm-fila" style="grid-template-columns:80px 1fr"><label class="campo">Ícono<input id="su-emoji" value="' + esc(s.emoji || '') + '" maxlength="4"></label>' +
+    '<label class="campo">Qué quieres<input id="su-nombre" value="' + esc(s.nombre || '') + '" placeholder="Sofá, viaje…"></label></div>' +
+    '<label class="campo">Cuánto cuesta (R$)<input id="su-precio" inputmode="decimal" value="' + esc(montoTexto(s.precio)) + '"></label>' +
+    '<label class="campo">Ya ahorré (R$)<input id="su-ahorrado" inputmode="decimal" value="' + esc(montoTexto(s.ahorrado)) + '"></label>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-sueno" data-id="' + esc(id || '') + '">Guardar</button><button class="btn" value="cancel">Cerrar</button>' +
+    (id ? '<button class="btn peligro" type="button" data-accion="borrar-sueno" data-id="' + esc(id) + '">Borrar</button>' : '') + '</div>';
+  $('#dlg').showModal();
+}
+function guardarSueno(id) {
+  var previo = S.suenos.filter(function (x) { return x.id === id; })[0] || {};
+  var limpio = function (v) { return num(String(v).replace(/\.(?=\d{3}(\D|$))/g, '')); };
+  var s = { id: id || idNuevo(), emoji: $('#su-emoji').value.trim(), nombre: $('#su-nombre').value.trim(), precio: limpio($('#su-precio').value),
+    ahorrado: limpio($('#su-ahorrado').value), cumplido: previo.cumplido || '', creado: previo.creado || '' };
+  if (!s.nombre || !(s.precio > 0)) { aviso('Escribe qué es y cuánto cuesta'); return; }
+  $('#dlg').close();
+  festejarSueno(previo, s);
+  guardarEn('Suenos', s);
+}
+function borrarSueno(id) {
+  var b = document.querySelector('[data-accion="borrar-sueno"]');
+  if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = 'Toca de nuevo para borrar'; return; }
+  $('#dlg').close();
+  eliminarDe('Suenos', id);
+}
+function abrirAhorro(id) {
+  var s = S.suenos.filter(function (x) { return x.id === id; })[0];
+  $('#dlg-form').innerHTML = '<h2>' + esc((s.emoji ? s.emoji + ' ' : '') + s.nombre) + '</h2>' +
+    '<p class="small muted" style="margin:0">Llevas ' + R0(num(s.ahorrado)) + ' de ' + R0(num(s.precio)) + '.</p>' +
+    '<label class="campo">¿Cuánto sumas? (R$)<input id="ah-monto" inputmode="decimal" placeholder="500"></label>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-ahorro" data-id="' + esc(id) + '">Sumar</button><button class="btn" value="cancel">Cerrar</button></div>';
+  $('#dlg').showModal();
+}
+function guardarAhorro(id) {
+  var s = S.suenos.filter(function (x) { return x.id === id; })[0];
+  var v = num($('#ah-monto').value.replace(/\.(?=\d{3}(\D|$))/g, ''));
+  if (!(v > 0)) { aviso('Escribe un monto'); return; }
+  $('#dlg').close();
+  var nuevo = Object.assign({}, s, { ahorrado: redondear(num(s.ahorrado) + v) });
+  festejarSueno(s, nuevo);
+  guardarEn('Suenos', nuevo);
+}
+function festejarSueno(antes, despues) {
+  var listo = num(despues.precio) > 0 && num(despues.ahorrado) >= num(despues.precio);
+  var yaEstaba = num(antes.precio) > 0 && num(antes.ahorrado) >= num(antes.precio);
+  if (listo && !yaEstaba) { despues.cumplido = hoy; confeti(); aviso('¡Sueño cumplido: ' + despues.nombre + '! 🎉'); }
+  else if (!listo) despues.cumplido = '';
+}
+
+function sembrar() {
+  aviso('Cargando tu plan…');
+  llamar('api_sembrarPlan').then(function (d) { recibir(d); aviso('Listo: tu plan de Mi Dinero está cargado'); })
+    .catch(function (e) { aviso('No se pudo: ' + e.message); });
+}
+
+// Confeti para deudas terminadas y sueños cumplidos
+function confeti() {
+  if (sinMovimiento) return;
+  var c = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.className = 'confeti'; document.body.appendChild(c);
+  var W = c.width = innerWidth * dpr, H = c.height = innerHeight * dpr, x = c.getContext('2d');
+  var colores = ['#a3ec74', '#f1f7ec', '#f4c862', '#7fd6a0'], ps = [];
+  for (var i = 0; i < 150; i++) {
+    ps.push({ x: W / 2, y: H * 0.45, vx: (Math.random() - 0.5) * 30 * dpr, vy: (-Math.random() * 30 - 8) * dpr, r: (5 + Math.random() * 8) * dpr,
+      c: colores[i % colores.length], a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4 });
+  }
+  var t0 = null;
+  function paso(t) {
+    t0 = t0 || t;
+    var dt = t - t0;
+    x.clearRect(0, 0, W, H);
+    ps.forEach(function (p) {
+      p.vy += 1.1 * dpr; p.x += p.vx; p.y += p.vy; p.vx *= 0.985; p.a += p.va;
+      x.save(); x.translate(p.x, p.y); x.rotate(p.a); x.globalAlpha = Math.max(0, 1 - dt / 1900);
+      x.fillStyle = p.c; x.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); x.restore();
+    });
+    if (dt < 1900) requestAnimationFrame(paso); else c.remove();
+  }
+  requestAnimationFrame(paso);
+}
+
 // ---------------------------------------------------------------- Eventos
 document.addEventListener('click', function (e) {
-  var t = e.target.closest('[data-tab],[data-ir],[data-mov],[data-periodo],[data-accion]');
+  var t = e.target.closest('[data-tab],[data-ir],[data-mov],[data-periodo],[data-orden],[data-accion]');
   if (!t) return;
   if (t.dataset.tab || t.dataset.ir) { S.tab = t.dataset.tab || t.dataset.ir; render(); scrollTo(0, 0); }
   else if (t.dataset.mov) abrirMov(t.dataset.mov);
   else if (t.dataset.periodo) { S.periodo = t.dataset.periodo; render(); }
+  else if (t.dataset.orden) { S.planOrden = t.dataset.orden; render(); }
   else ({
     agregar: abrirAgregar, importar: function () { $('#archivo').click(); },
     'guardar-mov': function () { guardarMov(t.dataset.id); }, 'borrar-mov': function () { borrarMov(t.dataset.id); },
     'guardar-nuevo': guardarNuevo,
-    reintentar: cargar, conectar: conectar, desconectar: desconectar
+    reintentar: cargar, conectar: conectar, desconectar: desconectar,
+    'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
+    'mes-sig': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), 1); render(); },
+    sembrar: sembrar, 'nuevo-item': function () { abrirItem(null); }, 'editar-item': function () { abrirItem(t.dataset.id); },
+    pagar: function () { pagar(t); }, desmarcar: function () { eliminarDe('Pagos', t.dataset.pago); aviso('Vuelve a por pagar'); },
+    'ver-pagados': function () { S.verPagados = !S.verPagados; render(); },
+    'guardar-item': function () { guardarItem(t.dataset.id); }, 'borrar-item': function () { borrarItem(t.dataset.id); },
+    'editar-ingreso': abrirIngreso, 'guardar-ingreso': guardarIngreso,
+    'nuevo-sueno': function () { abrirSueno(null); }, 'editar-sueno': function () { abrirSueno(t.dataset.id); },
+    'guardar-sueno': function () { guardarSueno(t.dataset.id); }, 'borrar-sueno': function () { borrarSueno(t.dataset.id); },
+    ahorrar: function () { abrirAhorro(t.dataset.id); }, 'guardar-ahorro': function () { guardarAhorro(t.dataset.id); }
   })[t.dataset.accion]();
 });
 document.addEventListener('input', function (e) {
@@ -952,6 +1487,7 @@ document.addEventListener('input', function (e) {
 });
 document.addEventListener('change', function (e) {
   if (e.target.id === 'mesFiltro') { S.mesFiltro = e.target.value; render(); }
+  if (e.target.id === 'it-tipo') { $('#it-cuotas').hidden = e.target.value !== 'cuotas'; $('#it-cta').hidden = e.target.value !== 'tarjeta'; }
   if (e.target.id === 'archivo' && e.target.files[0]) { importar(e.target.files[0]); e.target.value = ''; }
 });
 document.addEventListener('submit', function (e) {
