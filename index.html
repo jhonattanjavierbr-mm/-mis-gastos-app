@@ -1103,7 +1103,7 @@ function abrirMov(id) {
 function abrirAgregar() {
   $('#dlg-form').innerHTML = '<h2>Agregar gasto</h2>' +
     '<label class="campo">Monto (R$)<input id="ag-monto" inputmode="decimal" placeholder="25,90" required></label>' +
-    '<label class="campo">Dónde / qué<input id="ag-com" placeholder="Padaria, Pix a Jonas…"></label>' +
+    '<label class="campo">Dónde / qué<input id="ag-com" placeholder="Padaria, Pix a un amigo…"></label>' +
     '<label class="campo">Cuenta<select id="ag-cta">' + CUENTAS.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></label>' +
     '<label class="campo">Método<select id="ag-met">' + Object.keys(METODOS).map(function (k) { return '<option value="' + k + '"' + (k === 'pix' ? ' selected' : '') + '>' + METODOS[k] + '</option>'; }).join('') + '</select></label>' +
     '<label class="campo">Fecha<input id="ag-fecha" type="date" value="' + hoy + '"></label>' +
@@ -1315,7 +1315,7 @@ function abrirItem(id) {
   var it = S.plan.filter(function (x) { return x.id === id; })[0] || { tipo: 'fijo', prioridad: 'normal', grupo: '', mes_inicio: S.mesPlan || mesDe(hoy) };
   var grupos = GRUPOS_BASE.concat(S.plan.map(function (x) { return x.grupo; })).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
   $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar pago' : 'Nuevo pago') + '</h2>' +
-    '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a Jonas…"></label>' +
+    '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a un amigo…"></label>' +
     '<label class="campo">Monto (R$)<input id="it-monto" inputmode="decimal" value="' + esc(montoTexto(it.monto)) + '" placeholder="450,00"></label>' +
     '<label class="campo">Grupo<input id="it-grupo" list="lista-grupos" value="' + esc(it.grupo || '') + '" placeholder="Vivir, Personas…"><span class="ayuda">Elige uno o escribe un nombre nuevo para crear un grupo.</span></label>' +
     '<datalist id="lista-grupos">' + grupos.map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
