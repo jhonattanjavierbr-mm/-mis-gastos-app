@@ -281,7 +281,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 
 <dialog id="dlg"><form method="dialog" class="form" id="dlg-form"></form></dialog>
 <div id="tip" hidden></div>
-<input type="file" id="archivo" accept=".csv,.ofx,.txt" hidden>
+<input type="file" id="archivo" accept=".csv,.ofx,.txt,.pdf,application/pdf" hidden>
 
 <script id="analisis">
 // Análisis puro (sin DOM). Lo prueba test/test.js.
@@ -737,6 +737,109 @@ function planDemo(hoy) {
 }
 </script>
 
+<script id="pdf">
+// Extractos en PDF de Itaú y Nubank: del PDF a líneas de texto, y de las líneas a movimientos.
+// Lo prueba test/test.js con líneas de ejemplo.
+var MESES_PT = { JAN: '01', FEV: '02', MAR: '03', ABR: '04', MAI: '05', JUN: '06', JUL: '07', AGO: '08', SET: '09', OUT: '10', NOV: '11', DEZ: '12' };
+
+function valorBr(s) { return parseFloat(String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.')); }
+function sinAcentos(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+/** Nombre del titular: el texto antes del CPF, o la línea anterior si el CPF va solo. */
+function titularDe(lineas) {
+  for (var i = 0; i < Math.min(lineas.length, 12); i++) {
+    var l = lineas[i];
+    if (/CPF|\d{3}\.\d{3}\.\d{3}-\d{2}|•••\.\d{3}/.test(l)) {
+      var antes = l.split(/CPF|\d/)[0].trim();
+      return antes || (lineas[i - 1] || '').trim();
+    }
+  }
+  return '';
+}
+/** Pix o transferencia a una cuenta propia (mismo nombre del titular). */
+function esPropia(desc, titular) {
+  var n = sinAcentos(titular).split(/\s+/)[0].slice(0, 7), t = sinAcentos(desc);
+  return n.length >= 4 && /pix|transf/.test(t) && t.indexOf(n) > -1;
+}
+
+function leerPdfBanco(lineas) {
+  var texto = lineas.join('\n');
+  if (/SALDO DO DIA/.test(texto) && /itau|lan[cç]amentos/i.test(texto)) return { banco: 'Itaú', filas: pdfItau(lineas) };
+  if (/Movimenta[cç][oõ]es/.test(texto) && /nubank|Nu Pagamentos|Total de (entradas|sa[ií]das)/i.test(texto)) return { banco: 'Nubank', filas: pdfNubank(lineas) };
+  return null;
+}
+
+// Itaú: "26/10/2026 PAY ZONA 24/10 -303,62". La fecha al final de la descripción es el día real de la compra.
+function pdfItau(lineas) {
+  var titular = titularDe(lineas), filas = [];
+  lineas.forEach(function (l) {
+    l = l.replace(/\s+/g, ' ').trim();
+    var m = l.match(/^(\d{2})\/(\d{2})\/(\d{4}) (.+?) (-?[\d.]+,\d{2})(?: -?[\d.]+,\d{2})?$/);
+    if (!m || /SALDO (DO DIA|ANTERIOR|EM CONTA)/i.test(m[4])) return;
+    var desc = m[4], fecha = m[3] + '-' + m[2] + '-' + m[1];
+    var c = desc.match(/\s?(\d{2})\/(\d{2})$/);
+    if (c) {
+      desc = desc.slice(0, c.index).trim();
+      fecha = (+m[3] - (+c[2] > +m[2] ? 1 : 0)) + '-' + c[2] + '-' + c[1];
+    }
+    if (esPropia(desc, titular)) desc += ' (entre contas)';
+    filas.push({ fecha: fecha, descricao: desc, valor: valorBr(m[5]) });
+  });
+  return filas;
+}
+
+// Nubank cuenta: "02 OUT 2026" abre el día; "Total de entradas/saídas" dice el signo de las filas que siguen.
+function pdfNubank(lineas) {
+  var titular = titularDe(lineas), filas = [], fecha = null, signo = 1, dentro = false;
+  lineas.forEach(function (l) {
+    l = l.replace(/\s+/g, ' ').trim();
+    if (/^Movimenta[cç][oõ]es/.test(l)) { dentro = true; return; }
+    if (!dentro || !l) return;
+    var d = l.match(/^(\d{2}) ([A-Z]{3}) (\d{4})(?: (.*))?$/);
+    if (d && MESES_PT[d[2]]) { fecha = d[3] + '-' + MESES_PT[d[2]] + '-' + d[1]; l = d[4] || ''; }
+    if (/^Total de entradas/i.test(l)) { signo = 1; return; }
+    if (/^Total de sa[ií]das/i.test(l)) { signo = -1; return; }
+    var m = l.match(/^(.+?) ([\d.]+,\d{2})$/);
+    if (!m || !fecha || /^(Saldo|Rendimento l)/i.test(m[1])) return;
+    var desc = m[1].replace(/ - [•\d.\/-]{6,}.*$/, '').replace(/\s*\(Transfer[eê]ncia$/i, '').trim();
+    if (esPropia(desc, titular)) desc += ' (entre contas)';
+    filas.push({ fecha: fecha, descricao: desc, valor: signo * valorBr(m[2]) });
+  });
+  return filas;
+}
+
+/** Arma las líneas de un documento de pdf.js: agrupa los textos por altura y los ordena de izquierda a derecha. */
+function lineasDePdf(doc) {
+  var paginas = [];
+  for (var p = 1; p <= doc.numPages; p++) paginas.push(p);
+  return paginas.reduce(function (prom, p) {
+    return prom.then(function (todas) {
+      return doc.getPage(p).then(function (pag) { return pag.getTextContent(); }).then(function (tc) {
+        var filas = [];
+        tc.items.forEach(function (it) {
+          if (!it.str || !it.str.trim()) return;
+          var y = it.transform[5], x = it.transform[4];
+          var f = filas.filter(function (r) { return Math.abs(r.y - y) < 3; })[0];
+          if (!f) { f = { y: y, items: [] }; filas.push(f); }
+          f.items.push({ x: x, s: it.str });
+        });
+        filas.sort(function (a, b) { return b.y - a.y; });
+        return todas.concat(filas.map(function (f) {
+          return f.items.sort(function (a, b) { return a.x - b.x; }).map(function (i) { return i.s.trim(); }).join(' ');
+        }));
+      });
+    });
+  }, Promise.resolve([]));
+}
+
+/** Movimientos → el CSV que entiende el servidor (data, descricao, valor, origem). */
+function csvDePdf(r) {
+  return 'data,descricao,valor,origem\n' + r.filas.map(function (f) {
+    return [f.fecha, '"' + f.descricao.replace(/"/g, '""') + '"', f.valor, r.banco].join(',');
+  }).join('\n');
+}
+</script>
+
 <script id="app">
 var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '',
   plan: [], pagos: [], suenos: [], mesPlan: '', planOrden: 'prioridad', verPagados: false };
@@ -1159,13 +1262,38 @@ function guardarNuevo() {
   llamar('api_agregar', datos).then(function (m) { S.movs.unshift(m); render(); aviso('Agregado en ' + m.categoria); })
     .catch(function (e) { aviso('No se agregó: ' + e.message); });
 }
+// pdf.js se carga solo cuando hace falta leer un PDF
+var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function cargarPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise(function (ok, mal) {
+    var sc = document.createElement('script');
+    sc.src = PDFJS + 'pdf.min.js';
+    sc.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; ok(window.pdfjsLib); };
+    sc.onerror = function () { mal(new Error('No pude cargar el lector de PDF. Revisa tu conexión.')); };
+    document.head.appendChild(sc);
+  });
+}
+function textoDePdf(file) {
+  return cargarPdfJs()
+    .then(function (lib) { return file.arrayBuffer().then(function (b) { return lib.getDocument({ data: new Uint8Array(b) }).promise; }); })
+    .then(lineasDePdf)
+    .then(function (lineas) {
+      var r = leerPdfBanco(lineas);
+      if (!r) throw new Error('no reconozco este PDF. Por ahora leo extractos de cuenta de Itaú y de Nubank.');
+      if (!r.filas.length) throw new Error('el PDF no tiene movimientos.');
+      return csvDePdf(r);
+    });
+}
+
 function importar(file) {
   if (S.demo) { aviso('Importar funciona cuando abres tu tablero conectado'); return; }
   var leer = function (enc) {
     return new Promise(function (ok) { var fr = new FileReader(); fr.onload = function () { ok(fr.result); }; fr.readAsText(file, enc); });
   };
-  aviso('Importando ' + file.name + '…');
-  leer('utf-8').then(function (t) { return t.indexOf('\uFFFD') > -1 ? leer('iso-8859-1') : t; })
+  var esPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  aviso((esPdf ? 'Leyendo ' : 'Importando ') + file.name + '…');
+  (esPdf ? textoDePdf(file) : leer('utf-8').then(function (t) { return t.indexOf('\uFFFD') > -1 ? leer('iso-8859-1') : t; }))
     .then(function (t) { return llamar('api_importar', file.name, t); })
     .then(function (r) { aviso(r.formato + ': ' + r.nuevos + ' nuevos, ' + r.conciliados + ' unidos con Apple Pay, ' + r.repetidos + ' ya estaban'); cargar(); })
     .catch(function (e) { aviso('No pude importar: ' + e.message); });
