@@ -793,6 +793,7 @@ function recibir(d) {
   S.movs = d.movimientos.sort(function (a, b) { return (b.fecha + b.hora).localeCompare(a.fecha + a.hora); });
   S.cfg = d.config || {}; S.categorias = d.categorias || CATS_DEFECTO; S.demo = false;
   S.plan = d.plan || []; S.pagos = d.pagos || []; S.suenos = d.suenos || [];
+  if (!S.mesPlan) { var ini = S.plan.map(function (x) { return x.mes_inicio; }).filter(Boolean).sort()[0]; if (ini && ini > mesDe(hoy)) S.mesPlan = ini; }
   $('#estado').textContent = S.movs.length + ' movimientos';
   render();
 }
@@ -1425,10 +1426,20 @@ function festejarSueno(antes, despues) {
   else if (!listo) despues.cumplido = '';
 }
 
+// Si el plan empieza después de este mes, Mi Mes abre en el primer mes con pagos
+function irAlPrimerMes() {
+  var inicio = S.plan.map(function (x) { return x.mes_inicio; }).filter(Boolean).sort()[0];
+  if (inicio && inicio > mesDe(hoy)) S.mesPlan = inicio;
+  render();
+}
 function sembrar() {
   aviso('Cargando tu plan…');
-  llamar('api_sembrarPlan').then(function (d) { recibir(d); aviso('Listo: tu plan de Mi Dinero está cargado'); })
-    .catch(function (e) { aviso('No se pudo: ' + e.message); });
+  llamar('api_sembrarPlan').then(function (d) { recibir(d); irAlPrimerMes(); aviso('Listo: tu plan de Mi Dinero está cargado'); })
+    .catch(function (e) {
+      // Si Google tardó y el plan ya quedó guardado, solo hay que traerlo
+      if (/ya tienes un plan/i.test(e.message)) { aviso('Tu plan ya estaba cargado'); cargar(); S.mesPlan = ''; return; }
+      aviso('No se pudo: ' + e.message);
+    });
 }
 
 // Confeti para deudas terminadas y sueños cumplidos
