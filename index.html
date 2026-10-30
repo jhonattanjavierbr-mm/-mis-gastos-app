@@ -224,6 +224,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .prio.normal { box-shadow: inset 0 0 0 2px var(--muted); }
 .prio.hecho { background: var(--lima); }
 .atr { color: var(--bad); font-weight: 700; }
+.pronto { color: var(--warn); font-weight: 700; }
 .check { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: none; position: relative; padding: 0; transition: background .2s, border-color .2s, transform .2s; }
 .check::after { content: ""; position: absolute; left: 10px; top: 5px; width: 8px; height: 15px; border: solid var(--muted); border-width: 0 3px 3px 0; transform: rotate(45deg); opacity: .35; }
 .check:hover::after { opacity: 1; }
@@ -1083,8 +1084,13 @@ function vAjustes() {
           '<label class="campo">Clave<input id="cx-k" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="La de la pestaña Config del Sheet"></label>' +
           '<div class="acciones"><button class="btn prim" data-accion="conectar">Conectar</button></div></div>') +
     '</section>' +
+    '<section class="card"><h2>Avisos por email</h2><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink-2)">' +
+      '<li>Todos los días a las 8:00: pagos que vencen en 2 días o hoy (los que tienen «vence el día»).</li>' +
+      '<li>Si el atajo de Apple Pay pasa 4 días sin registrar compras.</li>' +
+      '<li>Lunes: resumen de la semana. Día 1: reporte del mes y copia de seguridad del Sheet en tu Drive.</li></ul>' +
+      '<p class="small muted" style="margin:0">Se activan una vez desde el editor de Apps Script con la función <code>activarAvisos</code>.</p></section>' +
     '<section class="card"><h2>De dónde salen tus datos</h2><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink-2)">' +
-      '<li><b>Apple Pay:</b> automático. El Atajo "Transacción" manda cada compra con comercio, monto, tarjeta, día y hora.</li>' +
+      '<li><b>Apple Pay:</b> automático. El atalho "Registrar Transação" manda cada compra con comercio, monto, tarjeta, día y hora.</li>' +
       '<li><b>Pix, compras online y débito sin Apple Pay:</b> importa una vez al mes el extracto de Nubank o Itaú (CSV u OFX). Lo repetido se junta solo.</li>' +
       '<li><b>Efectivo o Pix rápido:</b> el Atajo "Gasto rápido" (3 toques).</li></ul></section>';
 }
@@ -1259,6 +1265,12 @@ function filaPago(o) {
   if (o.atrasado) meta.push('<span class="atr">atrasado de ' + MESES_L[+o.mes.slice(5, 7) - 1] + '</span>');
   if (o.estimado) meta.push('estimado');
   if (it.tipo === 'tarjeta' && !o.estimado) meta.push('según tus compras');
+  var vence = num(it.vence_dia);
+  if (vence && !o.atrasado) {
+    var falta = o.mes === mesDe(hoy) ? Math.min(vence, diasDelMes(o.mes)) - +hoy.slice(8, 10) : null;
+    meta.push(falta === null ? 'vence día ' + vence : falta < 0 ? '<span class="atr">venció el día ' + vence + '</span>'
+      : falta === 0 ? '<span class="atr">vence hoy</span>' : falta <= 3 ? '<span class="pronto">vence en ' + falta + ' día' + (falta > 1 ? 's' : '') + '</span>' : 'vence día ' + vence);
+  }
   return '<div class="pago" data-accion="editar-item" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
     '<span class="prio ' + esc(it.prioridad || 'normal') + '" title="' + (NOMBRE_PRIO[it.prioridad] || 'Normal') + '"></span>' +
     '<span style="min-width:0"><span class="nom">' + esc(it.nombre) + '</span><span class="meta">' + meta.join(' · ') + '</span></span>' +
@@ -1328,7 +1340,9 @@ function abrirItem(id) {
       '<label class="campo">Ya pagadas antes<input id="it-previas" inputmode="numeric" value="' + esc(it.pagadas_previas || 0) + '"></label></div>' +
     '<label class="campo" id="it-cta"' + (it.tipo === 'tarjeta' ? '' : ' hidden') + '>Tarjeta<select id="it-cuenta">' + CUENTAS.map(function (c) { return '<option' + (it.cuenta === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>' +
       '<span class="ayuda">El monto se calcula con tus compras con esa tarjeta del mes anterior. El que escribes arriba es el estimado del primer mes.</span></label>' +
-    '<label class="campo">Desde el mes<input id="it-mes" type="month" value="' + esc(it.mes_inicio || mesDe(hoy)) + '"></label>' +
+    '<div class="rm-fila"><label class="campo">Desde el mes<input id="it-mes" type="month" value="' + esc(it.mes_inicio || mesDe(hoy)) + '"></label>' +
+      '<label class="campo">Vence el día<input id="it-vence" inputmode="numeric" placeholder="Ej: 10" value="' + esc(it.vence_dia || '') + '"></label></div>' +
+    '<span class="ayuda">Con el día de vencimiento te aviso por email 2 días antes y el mismo día.</span>' +
     '<label class="campo">Nota<input id="it-nota" value="' + esc(it.nota || '') + '" placeholder="Opcional"></label>' +
     '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-item" data-id="' + esc(id || '') + '">Guardar</button><button class="btn" value="cancel">Cerrar</button>' +
     (id ? '<button class="btn peligro" type="button" data-accion="borrar-item" data-id="' + esc(id) + '">Borrar</button>' : '') + '</div>';
@@ -1340,7 +1354,8 @@ function guardarItem(id) {
   var obj = {
     id: id || idNuevo(), nombre: $('#it-nombre').value.trim(), monto: num($('#it-monto').value.replace(/\.(?=\d{3}(\D|$))/g, '')),
     grupo: $('#it-grupo').value.trim() || 'Otros', tipo: $('#it-tipo').value, prioridad: prio ? prio.value : 'normal',
-    mes_inicio: $('#it-mes').value || mesDe(hoy), cuotas_total: '', pagadas_previas: '', cuenta: '', nota: $('#it-nota').value.trim(), creado: previo.creado || ''
+    mes_inicio: $('#it-mes').value || mesDe(hoy), cuotas_total: '', pagadas_previas: '', cuenta: '', nota: $('#it-nota').value.trim(), creado: previo.creado || '',
+    vence_dia: Math.min(31, Math.max(0, Math.round(num($('#it-vence').value)))) || ''
   };
   if (obj.tipo === 'cuotas') { obj.cuotas_total = Math.max(1, Math.round(num($('#it-total').value))); obj.pagadas_previas = Math.max(0, Math.round(num($('#it-previas').value))); }
   if (obj.tipo === 'tarjeta') obj.cuenta = $('#it-cuenta').value;
