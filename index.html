@@ -55,7 +55,7 @@ code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; font-
 .marca { display: flex; align-items: center; gap: 10px; }
 .marca .logo { width: 36px; height: 36px; border-radius: 12px; background: var(--lima); display: grid; place-items: center; }
 .marca h1 { font-size: 19px; }
-.chip-estado { font-size: 12px; color: var(--ink-2); background: var(--surface); padding: 6px 12px; border-radius: 99px; font-weight: 600; }
+.chip-estado { cursor: pointer; font-size: 12px; color: var(--ink-2); background: var(--surface); padding: 6px 12px; border-radius: 99px; font-weight: 600; }
 .vista { display: grid; gap: 14px; }
 .titulo-vista { font-size: 28px; padding-block: 2px 4px; }
 .banner { background: var(--lima-soft); color: var(--ink); border-radius: 14px; padding: 10px 14px; font-size: 13px; }
@@ -263,7 +263,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
       <span class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10290a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path d="M15 8h5v5"/></svg></span>
       <h1>Mis Gastos</h1>
     </div>
-    <div class="top-der"><span class="chip-estado" id="estado">Cargando…</span>
+    <div class="top-der"><span class="chip-estado" id="estado" role="button" tabindex="0" title="Tocar para actualizar">Cargando…</span>
       <button class="btn-ic" data-tab="ajustes" aria-label="Ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div>
   </header>
   <main id="vista" class="vista"><p class="vacio">Cargando tus gastos…</p></main>
@@ -893,7 +893,16 @@ function llamar(fn) {
     .then(function (r) { return r.json(); })
     .then(function (d) { if (!d.ok) throw new Error(d.error || 'Error del servidor'); return d.data; });
 }
+// Al volver a la app (o tocar el contador) se traen las compras nuevas
+var ultimaCarga = 0;
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && conectado && Date.now() - ultimaCarga > 20000) cargar();
+});
+document.addEventListener('click', function (e) {
+  if (e.target.closest && e.target.closest('#estado') && conectado) { $('#estado').textContent = 'Actualizando…'; cargar(); }
+});
 function recibir(d) {
+  ultimaCarga = Date.now();
   S.movs = d.movimientos.sort(function (a, b) { return (b.fecha + b.hora).localeCompare(a.fecha + a.hora); });
   S.cfg = d.config || {}; S.categorias = d.categorias || CATS_DEFECTO; S.demo = false;
   S.plan = d.plan || []; S.pagos = d.pagos || []; S.suenos = d.suenos || [];
