@@ -842,7 +842,7 @@ function csvDePdf(r) {
 
 <script id="app">
 var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '',
-  plan: [], pagos: [], suenos: [], mesPlan: '', planOrden: 'prioridad', verPagados: false };
+  plan: [], pagos: [], suenos: [], cuentas: [], bancos: {}, mesPlan: '', planOrden: 'prioridad', verPagados: false };
 var hoy = (function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })();
 var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 var MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -906,6 +906,7 @@ function recibir(d) {
   S.movs = d.movimientos.sort(function (a, b) { return (b.fecha + b.hora).localeCompare(a.fecha + a.hora); });
   S.cfg = d.config || {}; S.categorias = d.categorias || CATS_DEFECTO; S.demo = false;
   S.plan = d.plan || []; S.pagos = d.pagos || []; S.suenos = d.suenos || [];
+  S.cuentas = d.cuentas || []; S.bancos = d.bancos || {};
   if (!S.mesPlan) { var ini = S.plan.map(function (x) { return x.mes_inicio; }).filter(Boolean).sort()[0]; if (ini && ini > mesDe(hoy)) S.mesPlan = ini; }
   $('#estado').textContent = S.movs.length + ' movimientos';
   render();
@@ -1042,7 +1043,7 @@ function vResumen(A) {
       rapida('data-accion="importar"', 'Importar', ICO.subir) +
       rapida('data-ir="mimes"', 'Mi Mes', ICO.lista) +
       rapida('data-ir="analisis"', 'Análisis', ICO.barras) +
-    '</section>' + tarjetaMiMes() +
+    '</section>' + tarjetaMiMes() + tarjetaCuentas() +
     '<section class="duo">' +
       '<div class="mini"><span class="eyebrow">Próximo mes</span><span class="v num">' + R0(p.total) + '</span><span class="small muted">' + (p.base ? 'entre ' + R0(p.min) + ' y ' + R0(p.max) : 'faltan meses de historia') + '</span></div>' +
       '<button class="mini" data-ir="credito"><span class="eyebrow">Crédito</span>' + gauge(c.puntaje, c.nivel) + '<span class="pill ' + c.nivel + '">' + c.etiqueta + '</span></button>' +
@@ -1196,6 +1197,11 @@ function vAjustes() {
           '<label class="campo">Clave<input id="cx-k" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="La de la pestaña Config del Sheet"></label>' +
           '<div class="acciones"><button class="btn prim" data-accion="conectar">Conectar</button></div></div>') +
     '</section>' +
+    '<section class="card"><div class="card-cab"><h2>Bancos conectados</h2>' + (S.bancos.conectados ? '<button class="link" data-accion="sincronizar">Actualizar ahora</button>' : '') + '</div>' +
+      (S.bancos.conectados
+        ? '<p style="margin:0">Nubank e Itaú por Open Finance. Última actualización: ' + (haceCuanto(S.bancos.ultima) || 'todavía no') + '. Se actualiza solo cada mañana.</p>'
+        : '<p class="small muted" style="margin:0">Conecta Nubank e Itaú por Open Finance (Meu Pluggy, gratis) y tus compras, Pix, saldos y límites entran solos. La guía está en <code>apps/mis-gastos/README.md</code>.</p>') +
+    '</section>' +
     '<section class="card"><h2>Avisos por email</h2><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink-2)">' +
       '<li>Todos los días a las 8:00: pagos que vencen en 2 días o hoy (los que tienen «vence el día»).</li>' +
       '<li>Si el atajo de Apple Pay pasa 4 días sin registrar compras.</li>' +
@@ -1306,6 +1312,38 @@ function importar(file) {
     .then(function (t) { return llamar('api_importar', file.name, t); })
     .then(function (r) { aviso(r.formato + ': ' + r.nuevos + ' nuevos, ' + r.conciliados + ' unidos con Apple Pay, ' + r.repetidos + ' ya estaban'); cargar(); })
     .catch(function (e) { aviso('No pude importar: ' + e.message); });
+}
+
+// ---------------------------------------------------------------- Bancos conectados (Open Finance)
+function haceCuanto(f) {
+  if (!f) return '';
+  var min = Math.round((Date.now() - new Date(String(f).replace(' ', 'T')).getTime()) / 60000);
+  if (!(min >= 0)) return '';
+  return min < 2 ? 'recién' : min < 60 ? 'hace ' + min + ' min' : min < 1440 ? 'hace ' + Math.round(min / 60) + ' h' : 'hace ' + Math.round(min / 1440) + ' días';
+}
+function tarjetaCuentas() {
+  if (!S.cuentas.length) return '';
+  var filas = S.cuentas.slice().sort(function (a, b) { return a.tipo === b.tipo ? String(a.banco).localeCompare(b.banco) : a.tipo === 'cuenta' ? -1 : 1; }).map(function (c) {
+    if (c.tipo === 'tarjeta' && num(c.limite)) {
+      var usado = num(c.limite) - num(c.disponible), pct = Math.min(1, Math.max(0, usado / num(c.limite)));
+      return '<li><span class="nom">' + esc(c.banco) + ' · tarjeta</span><span class="num">' + R0(usado) + ' <span class="muted small">de ' + R0(num(c.limite)) + '</span></span>' +
+        '<span class="pista"><i style="width:' + (pct * 100).toFixed(1) + '%' + (pct > 0.7 ? ';background:var(--warn)' : '') + '"></i></span>' +
+        '<span class="det">' + Math.round(pct * 100) + '% del límite usado' + (c.vence ? ' · factura vence ' + fechaCorta(c.vence) : '') + '</span></li>';
+    }
+    var neg = num(c.saldo) < 0;
+    return '<li><span class="nom">' + esc(c.banco) + ' · ' + esc(c.nombre || 'cuenta') + '</span><span class="num" style="color:' + (neg ? 'var(--bad)' : 'var(--ink)') + '">' + R(num(c.saldo)) + '</span>' +
+      (neg ? '<span class="det" style="color:var(--bad)">En negativo: estás usando el cheque especial</span>' : '') + '</li>';
+  }).join('');
+  return '<section class="card"><div class="card-cab"><h2>Mis cuentas</h2><button class="link" data-accion="sincronizar">Actualizar</button></div>' +
+    '<ul class="rank">' + filas + '</ul><p class="small muted" style="margin:0">Open Finance · ' + (haceCuanto(S.bancos.ultima) || 'sin datos') + '</p></section>';
+}
+function sincronizar() {
+  if (S.demo) { aviso('Funciona cuando conectas tus bancos'); return; }
+  aviso('Actualizando tus bancos…');
+  llamar('api_sincronizar').then(function (r) {
+    recibir(r.datos);
+    aviso(r.resumen.nuevos ? r.resumen.nuevos + ' movimientos nuevos' + (r.resumen.conciliados ? ', ' + r.resumen.conciliados + ' unidos con Apple Pay' : '') : 'Todo al día');
+  }).catch(function (e) { aviso('No pude actualizar: ' + e.message); });
 }
 
 // ---------------------------------------------------------------- Mi Mes
@@ -1632,7 +1670,7 @@ document.addEventListener('click', function (e) {
     agregar: abrirAgregar, importar: function () { $('#archivo').click(); },
     'guardar-mov': function () { guardarMov(t.dataset.id); }, 'borrar-mov': function () { borrarMov(t.dataset.id); },
     'guardar-nuevo': guardarNuevo,
-    reintentar: cargar, conectar: conectar, desconectar: desconectar,
+    reintentar: cargar, conectar: conectar, desconectar: desconectar, sincronizar: sincronizar,
     'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
     'mes-sig': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), 1); render(); },
     sembrar: sembrar, 'nuevo-item': function () { abrirItem(null); }, 'editar-item': function () { abrirItem(t.dataset.id); },
