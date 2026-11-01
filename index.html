@@ -269,6 +269,12 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .fb-sub { font-size: 12px; font-weight: 500; color: var(--muted); }
 .fb-monto { font-family: var(--f-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 .rojo { color: var(--bad) !important; }
+.hoy { gap: 10px; }
+.hoy.bien { box-shadow: inset 0 3px 0 var(--lima); }
+.hoy.riesgo { box-shadow: inset 0 3px 0 var(--bad); }
+.hoy-monto { font-family: var(--f-display); font-size: clamp(40px, 12vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.hoy-monto small { font-size: 0.34em; color: var(--muted); font-weight: 700; letter-spacing: 0; }
+.hoy.riesgo .hoy-monto { color: var(--bad); }
 .tarjeta-mini { border-radius: 18px; padding: 14px 16px; color: #fff; display: grid; gap: 6px; }
 .tm-top { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
 .tm-monto { font-family: var(--f-display); font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
@@ -734,6 +740,19 @@ function metasCumplidas(d) {
   return r.sort(function (a, b) { return String(b.fecha).localeCompare(String(a.fecha)); });
 }
 
+// Lo que pagas por plan (alquiler, cuentas, impuestos, cuotas, personas): no cuenta como gasto del día a día
+var PLANEADAS = ['Alquiler', 'Impuestos y contador', 'Préstamos e intereses', 'Personas (Pix)', 'Casa y servicios'];
+/** Cuánto puedes gastar por día lo que queda del mes: (lo que entra − lo que tienes que pagar − lo ya gastado) ÷ días. */
+function gastoDiario(d, hoy) {
+  var M = mesDe(hoy), V = vistaMes(d, M, M);
+  var variable = redondear(suma((d.movs || []).filter(function (m) {
+    return esGasto(m) && mesDe(m.fecha) === M && PLANEADAS.indexOf(m.categoria) < 0;
+  }), function (m) { return m.monto; }));
+  var presupuesto = redondear(V.entra - V.pagar), disponible = redondear(presupuesto - variable);
+  var dias = diasDelMes(M) - +hoy.slice(8, 10) + 1;
+  return { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias), sinIngreso: !V.entra };
+}
+
 /** Plan de ejemplo (inventado) para ver Mi Mes sin conectar nada. */
 function planDemo(hoy) {
   var M = mesDe(hoy), ant = sumarMes(M, -1);
@@ -1065,7 +1084,7 @@ function rapida(attr, texto, ico, prim) {
 
 function vResumen(A) {
   var ult = S.movs.slice(0, 5);
-  return bloqueTengoDebo() + bloqueGastado(A) + tarjetaMiMes() +
+  return bloqueHoy() + bloqueTengoDebo() + bloqueGastado(A) + tarjetaMiMes() +
     '<section class="card"><div class="card-cab"><h2>Últimos movimientos</h2><button class="link" data-ir="movimientos">Ver todos</button></div>' +
       (ult.length ? '<div class="lista">' + ult.map(filaMov).join('') + '</div>' : '<p class="vacio">Todavía no hay movimientos.</p>') +
     '</section>';
@@ -1221,6 +1240,11 @@ function vAjustes() {
         ? '<p style="margin:0">Nubank e Itaú por Open Finance. Última actualización: ' + (haceCuanto(S.bancos.ultima) || 'todavía no') + '. Se actualiza solo cada mañana.</p>'
         : '<p class="small muted" style="margin:0">Conecta Nubank e Itaú por Open Finance (Meu Pluggy, gratis) y tus compras, Pix, saldos y límites entran solos. La guía está en <code>apps/mis-gastos/README.md</code>.</p>') +
     '</section>' +
+    '<section class="card"><h2>Notificaciones en el celular</h2><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink-2)">' +
+      '<li><b>Llegó tu sueldo:</b> qué pagar primero, qué separar y cuánto te queda por día.</li>' +
+      '<li><b>Cobro duplicado:</b> mismo comercio y monto dos veces en pocos días.</li>' +
+      '<li><b>Vencimientos:</b> 2 días antes y el mismo día. <b>Lunes:</b> cuánto puedes gastar por día esa semana.</li></ul>' +
+      '<p class="small muted" style="margin:0">Llegan a la app gratis <b>ntfy</b>. Se activan una vez con <code>activarNotificaciones</code> en Apps Script.</p></section>' +
     '<section class="card"><h2>Avisos por email</h2><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink-2)">' +
       '<li>Todos los días a las 8:00: pagos que vencen en 2 días o hoy (los que tienen «vence el día»).</li>' +
       '<li>Si el atajo de Apple Pay pasa 4 días sin registrar compras.</li>' +
@@ -1366,6 +1390,18 @@ function nombreCorto(c) {
 }
 
 // ---------------------------------------------------------------- Inicio: Tengo / Debo / Gasté
+function bloqueHoy() {
+  var g = gastoDiario(datosPlan(), hoy);
+  if (g.sinIngreso) return '';
+  var ok = g.porDia > 0, pct = g.presupuesto > 0 ? Math.min(1, Math.max(0, g.variable / g.presupuesto)) : 1;
+  return '<section class="card hoy ' + (ok ? 'bien' : 'riesgo') + '">' +
+    '<span class="eyebrow">' + (ok ? 'Hoy puedes gastar' : 'Este mes ya no hay margen') + '</span>' +
+    '<div class="hoy-monto num">' + (ok ? R0(g.porDia) : R0(-g.disponible)) + '<small>' + (ok ? ' por día' : ' de más') + '</small></div>' +
+    '<div class="barra-mes"><i style="width:' + (pct * 100).toFixed(1) + '%' + (ok ? '' : ';background:var(--bad)') + '"></i></div>' +
+    '<div class="barra-leg"><span>Gastado ' + R0(g.variable) + ' de ' + R0(Math.max(0, g.presupuesto)) + '</span><span>Quedan ' + g.dias + ' días</span></div>' +
+    '<p class="small muted" style="margin:0">Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.</p></section>';
+}
+
 function bloqueTengoDebo() {
   var cuentas = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
   var tarjetas = S.cuentas.filter(function (c) { return c.tipo === 'tarjeta'; });
