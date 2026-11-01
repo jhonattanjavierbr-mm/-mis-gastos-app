@@ -270,7 +270,9 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .fb-monto { font-family: var(--f-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 .rojo { color: var(--bad) !important; }
 .consejos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.consejos li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 15px; line-height: 1.35; cursor: pointer; }
+.consejos li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 6px 10px; align-items: start; font-size: 15px; line-height: 1.35; }
+.consejos li [data-ir] { cursor: pointer; }
+.ok-consejo { grid-column: 2; justify-self: start; border: 0; background: var(--surface-2); color: var(--ink-2); font-size: 12px; font-weight: 700; border-radius: 99px; padding: 5px 12px; }
 .consejos .ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
 .consejos .riesgo .ic { background: var(--bad-bg); color: var(--bad); }
 .consejos .atento .ic { background: var(--warn-bg); color: var(--warn); }
@@ -961,7 +963,7 @@ function csvDePdf(r) {
 </script>
 
 <script id="app">
-var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '',
+var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '', ocultosSesion: {},
   plan: [], pagos: [], suenos: [], cuentas: [], bancos: {}, mesPlan: '', planOrden: 'prioridad', verPagados: false };
 var hoy = (function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })();
 var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -1464,12 +1466,24 @@ function bloqueHoy() {
     '<p class="small muted" style="margin:0">Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.</p></section>';
 }
 
+// «Entendido» oculta un consejo 15 días en este teléfono; si sus números cambian, vuelve a aparecer
+function consejosOcultos() { try { return JSON.parse(localStorage.getItem('misgastos.ocultos') || '{}'); } catch (e) { return {}; } }
+function ocultarConsejo(texto) {
+  var o = consejosOcultos(), ahora = Date.now();
+  Object.keys(o).forEach(function (k) { if (o[k] < ahora) delete o[k]; });
+  o[texto] = ahora + 15 * 86400000;
+  try { localStorage.setItem('misgastos.ocultos', JSON.stringify(o)); } catch (e) { /* sin almacenamiento: solo se oculta hasta recargar */ }
+  S.ocultosSesion = S.ocultosSesion || {}; S.ocultosSesion[texto] = true;
+  render();
+}
 function bloqueConsejos() {
-  var c = consejos(datosPlan(), hoy).slice(0, 3);
+  var o = consejosOcultos(), ses = S.ocultosSesion || {}, ahora = Date.now();
+  var c = consejos(datosPlan(), hoy).filter(function (x) { return x.nivel === 'riesgo' || !((o[x.texto] && o[x.texto] > ahora) || ses[x.texto]); }).slice(0, 3);
   if (!c.length) return '';
   var ic = { riesgo: '!', atento: '→', bien: '✓' };
   return '<section class="card consejos"><span class="eyebrow">Consejos para ti</span><ul>' + c.map(function (x) {
-    return '<li class="' + x.nivel + '"' + (x.ir ? ' data-ir="' + x.ir + '"' : '') + '><span class="ic">' + ic[x.nivel] + '</span><span>' + esc(x.texto) + '</span></li>';
+    return '<li class="' + x.nivel + '"><span class="ic">' + ic[x.nivel] + '</span><span' + (x.ir ? ' data-ir="' + x.ir + '"' : '') + '>' + esc(x.texto) + '</span>' +
+      (x.nivel === 'riesgo' ? '' : '<button class="ok-consejo" data-accion="ocultar-consejo" data-texto="' + esc(x.texto) + '">Entendido</button>') + '</li>';
   }).join('') + '</ul></section>';
 }
 
@@ -1892,6 +1906,7 @@ document.addEventListener('click', function (e) {
     'guardar-mov': function () { guardarMov(t.dataset.id); }, 'borrar-mov': function () { borrarMov(t.dataset.id); },
     'guardar-nuevo': guardarNuevo,
     reintentar: cargar, conectar: conectar, desconectar: desconectar, sincronizar: sincronizar,
+    'ocultar-consejo': function () { ocultarConsejo(t.dataset.texto); },
     'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
     'mes-sig': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), 1); render(); },
     sembrar: sembrar, 'nuevo-item': function () { abrirItem(null); }, 'editar-item': function () { abrirItem(t.dataset.id); },
