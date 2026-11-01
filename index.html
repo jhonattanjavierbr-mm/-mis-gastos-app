@@ -280,6 +280,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .hoy { gap: 10px; }
 .hoy.bien { box-shadow: inset 0 3px 0 var(--lima); }
 .hoy.riesgo { box-shadow: inset 0 3px 0 var(--bad); }
+.hoy.espera { box-shadow: inset 0 3px 0 var(--warn); }
 .hoy-monto { font-family: var(--f-display); font-size: clamp(40px, 12vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 .hoy-monto small { font-size: 0.34em; color: var(--muted); font-weight: 700; letter-spacing: 0; }
 .hoy.riesgo .hoy-monto { color: var(--bad); }
@@ -748,17 +749,39 @@ function metasCumplidas(d) {
   return r.sort(function (a, b) { return String(b.fecha).localeCompare(String(a.fecha)); });
 }
 
+/** Lo usado de una tarjeta. Si el banco no informa el disponible, usamos lo que debes hoy (saldo). */
+function usoTarjeta(c) {
+  var lim = num(c.limite), disp = c.disponible;
+  if (lim && disp !== '' && disp != null && !isNaN(Number(disp))) return Math.max(0, lim - Number(disp));
+  return Math.max(0, num(c.saldo));
+}
+
 // Lo que pagas por plan (alquiler, cuentas, impuestos, cuotas, personas): no cuenta como gasto del día a día
 var PLANEADAS = ['Alquiler', 'Impuestos y contador', 'Préstamos e intereses', 'Personas (Pix)', 'Casa y servicios'];
-/** Cuánto puedes gastar por día lo que queda del mes: (lo que entra − lo que tienes que pagar − lo ya gastado) ÷ días. */
+/**
+ * Cuánto puedes gastar por día lo que queda del mes.
+ * Plan: (lo que entra − lo que tienes que pagar − lo ya gastado) ÷ días.
+ * Realidad: si ya cobraste y hay cuentas conectadas, nunca más que (plata en cuentas − pagos pendientes) ÷ días.
+ * Si el sueldo del mes todavía no entró, esperandoSueldo = true: el número es lo que podrás gastar cuando cobres.
+ */
 function gastoDiario(d, hoy) {
-  var M = mesDe(hoy), V = vistaMes(d, M, M);
-  var variable = redondear(suma((d.movs || []).filter(function (m) {
+  var M = mesDe(hoy), V = vistaMes(d, M, M), movs = d.movs || [];
+  var variable = redondear(suma(movs.filter(function (m) {
     return esGasto(m) && mesDe(m.fecha) === M && PLANEADAS.indexOf(m.categoria) < 0;
   }), function (m) { return m.monto; }));
   var presupuesto = redondear(V.entra - V.pagar), disponible = redondear(presupuesto - variable);
   var dias = diasDelMes(M) - +hoy.slice(8, 10) + 1;
-  return { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias), sinIngreso: !V.entra };
+  var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000; });
+  var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
+  var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); })) : null;
+  var esperando = !!V.entra && !cobro.length;
+  var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
+    sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false };
+  if (!esperando && enCuentas !== null) {
+    var real = redondear(enCuentas - V.falta);
+    if (real < r.disponible) { r.disponible = real; r.porDia = redondear(real / dias); r.limitadoPorCuentas = true; }
+  }
+  return r;
 }
 
 /**
@@ -782,13 +805,13 @@ function consejos(d, hoy) {
   if (pronto.length) add(90, 'atento', pronto[0].item.nombre + ' vence el día ' + pronto[0].item.vence_dia + ' (' + R(pronto[0].monto) + '). Déjalo listo.', 'mimes');
   // 4. Sin margen este mes
   var g = gastoDiario(d, hoy);
-  if (!g.sinIngreso && g.disponible < 0) add(85, 'riesgo', 'Este mes ya gastaste ' + R(-g.disponible) + ' de más. Hasta el día 1, solo lo esencial.', 'resumen');
-  else if (!g.sinIngreso && g.presupuesto > 0 && dia >= 5 && g.variable / g.presupuesto > (dia + 3) / (dia + g.dias - 1)) {
+  if (!g.sinIngreso && !g.esperandoSueldo && g.disponible < 0) add(85, 'riesgo', 'Este mes ya gastaste ' + R(-g.disponible) + ' de más. Hasta el día 1, solo lo esencial.', 'resumen');
+  else if (!g.sinIngreso && !g.esperandoSueldo && g.presupuesto > 0 && dia >= 5 && g.variable / g.presupuesto > (dia + 3) / (dia + g.dias - 1)) {
     add(70, 'atento', 'Vas gastando más rápido que el mes. Para llegar bien: ' + R(Math.max(0, g.porDia)) + ' por día.', 'resumen');
   }
   // 5. Tarjeta muy usada
   (d.cuentas || []).filter(function (c) { return c.tipo === 'tarjeta' && num(c.limite); }).forEach(function (c) {
-    var pct = (num(c.limite) - num(c.disponible)) / num(c.limite);
+    var pct = usoTarjeta(c) / num(c.limite);
     if (pct >= 0.7) add(75, 'atento', 'Usas el ' + Math.round(pct * 100) + '% de tu tarjeta ' + c.banco + '. Bajar de 30% cuida tu score.', 'resumen');
   });
   // 6. Préstamo caro activo con plata disponible
@@ -810,9 +833,9 @@ function consejos(d, hoy) {
   if (prom > 100 && dia >= 7 && ahora > prom * 1.25) add(45, 'atento', 'Restaurantes y delivery van ' + Math.round((ahora / prom - 1) * 100) + '% arriba de lo normal este mes.', 'analisis');
   // 10. Reserva de emergencia
   var reserva = (d.suenos || []).filter(function (x) { return /reserva|emergencia/i.test(x.nombre); })[0];
-  if (!reserva && V.sobra > 0 && !atr.length) add(30, 'bien', 'Te sobran ' + R(V.sobra) + ' este mes. Separa una parte como reserva de emergencia.', 'mimes');
+  if (!reserva && V.sobra > 0 && !atr.length && !g.esperandoSueldo) add(30, 'bien', 'Te sobran ' + R(V.sobra) + ' este mes. Separa una parte como reserva de emergencia.', 'mimes');
   // 11. Bien encaminado
-  if (!out.length && !g.sinIngreso) add(10, 'bien', 'Vas bien: puedes gastar ' + R(Math.max(0, g.porDia)) + ' por día y llegar tranquilo a fin de mes.', 'resumen');
+  if (!out.length && !g.sinIngreso && !g.esperandoSueldo) add(10, 'bien', 'Vas bien: puedes gastar ' + R(Math.max(0, g.porDia)) + ' por día y llegar tranquilo a fin de mes.', 'resumen');
 
   return out.sort(function (a, b) { return b.prio - a.prio; });
 }
@@ -1457,13 +1480,21 @@ function nombreCorto(c) {
 function bloqueHoy() {
   var g = gastoDiario(datosPlan(), hoy);
   if (g.sinIngreso) return '';
+  if (g.esperandoSueldo) {
+    var neg = g.enCuentas !== null && g.enCuentas < 0;
+    return '<section class="card hoy espera">' +
+      '<span class="eyebrow">Todavía no cobraste este mes</span>' +
+      '<div class="hoy-monto num">' + (g.enCuentas !== null ? R0(g.enCuentas) : '—') + '<small> en tus cuentas</small></div>' +
+      '<p style="margin:0">' + (neg ? 'Estás en negativo: <b>evita gastos hasta que entre tu sueldo</b>.' : 'Gasta solo lo necesario hasta que entre tu sueldo.') + '</p>' +
+      '<p class="small muted" style="margin:0">Cuando cobres, si todo sale como en Mi Mes, podrás gastar unos <b style="color:var(--ink)">' + R0(Math.max(0, g.porDia)) + ' por día</b>.</p></section>';
+  }
   var ok = g.porDia > 0, pct = g.presupuesto > 0 ? Math.min(1, Math.max(0, g.variable / g.presupuesto)) : 1;
   return '<section class="card hoy ' + (ok ? 'bien' : 'riesgo') + '">' +
     '<span class="eyebrow">' + (ok ? 'Hoy puedes gastar' : 'Este mes ya no hay margen') + '</span>' +
     '<div class="hoy-monto num">' + (ok ? R0(g.porDia) : R0(-g.disponible)) + '<small>' + (ok ? ' por día' : ' de más') + '</small></div>' +
     '<div class="barra-mes"><i style="width:' + (pct * 100).toFixed(1) + '%' + (ok ? '' : ';background:var(--bad)') + '"></i></div>' +
     '<div class="barra-leg"><span>Gastado ' + R0(g.variable) + ' de ' + R0(Math.max(0, g.presupuesto)) + '</span><span>Quedan ' + g.dias + ' días</span></div>' +
-    '<p class="small muted" style="margin:0">Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.</p></section>';
+    '<p class="small muted" style="margin:0">' + (g.limitadoPorCuentas ? 'Calculado con la plata que tienes hoy en tus cuentas, menos lo que falta pagar.' : 'Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.') + '</p></section>';
 }
 
 // «Entendido» oculta un consejo 15 días en este teléfono; si sus números cambian, vuelve a aparecer
@@ -1495,7 +1526,7 @@ function bloqueTengoDebo() {
   }
   var tengo = suma(cuentas, function (c) { return num(c.saldo); });
   var D = resumenDeudas(datosPlan());
-  var usadoTarj = function (c) { return num(c.limite) ? Math.max(0, num(c.limite) - num(c.disponible)) : Math.max(0, num(c.saldo)); };
+  var usadoTarj = usoTarjeta;
   var debo = suma(tarjetas, usadoTarj) + D.falta;
 
   var filasTengo = cuentas.map(function (c) {
