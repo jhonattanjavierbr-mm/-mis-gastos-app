@@ -269,6 +269,12 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .fb-sub { font-size: 12px; font-weight: 500; color: var(--muted); }
 .fb-monto { font-family: var(--f-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 .rojo { color: var(--bad) !important; }
+.consejos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.consejos li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 15px; line-height: 1.35; cursor: pointer; }
+.consejos .ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.consejos .riesgo .ic { background: var(--bad-bg); color: var(--bad); }
+.consejos .atento .ic { background: var(--warn-bg); color: var(--warn); }
+.consejos .bien .ic { background: var(--good-bg); color: var(--good); }
 .hoy { gap: 10px; }
 .hoy.bien { box-shadow: inset 0 3px 0 var(--lima); }
 .hoy.riesgo { box-shadow: inset 0 3px 0 var(--bad); }
@@ -753,6 +759,62 @@ function gastoDiario(d, hoy) {
   return { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias), sinIngreso: !V.entra };
 }
 
+/**
+ * Consejos cortos y directos según tus números, del más importante al menos.
+ * d = { plan, pagos, suenos, movs, cfg, cuentas }. Devuelve [{ nivel: 'riesgo'|'atento'|'bien', texto, ir }].
+ */
+function consejos(d, hoy) {
+  var out = [], R = function (n) { return 'R$ ' + Math.round(n).toLocaleString('pt-BR'); };
+  var M = mesDe(hoy), dia = +hoy.slice(8, 10), V = vistaMes(d, M, M), movs = d.movs || [];
+  var add = function (prio, nivel, texto, ir) { out.push({ prio: prio, nivel: nivel, texto: texto, ir: ir || '' }); };
+
+  // 1. Cuentas en negativo (cheque especial)
+  (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta' && num(c.saldo) < 0; }).forEach(function (c) {
+    add(100, 'riesgo', 'Tu cuenta ' + c.banco + ' está en negativo (' + R(-num(c.saldo)) + '). Cúbrela hoy: el cheque especial cobra intereses cada día.', 'resumen');
+  });
+  // 2. Pagos atrasados
+  var atr = V.porPagar.filter(function (o) { return o.atrasado; });
+  if (atr.length) add(95, 'riesgo', 'Tienes ' + atr.length + ' pago' + (atr.length > 1 ? 's' : '') + ' atrasado' + (atr.length > 1 ? 's' : '') + '. Empieza por ' + ordenarPagos(atr, 'prioridad')[0].item.nombre + '.', 'mimes');
+  // 3. Vence en los próximos 3 días
+  var pronto = V.porPagar.filter(function (o) { var v = num(o.item.vence_dia); return v && !o.atrasado && v - dia >= 0 && v - dia <= 3; });
+  if (pronto.length) add(90, 'atento', pronto[0].item.nombre + ' vence el día ' + pronto[0].item.vence_dia + ' (' + R(pronto[0].monto) + '). Déjalo listo.', 'mimes');
+  // 4. Sin margen este mes
+  var g = gastoDiario(d, hoy);
+  if (!g.sinIngreso && g.disponible < 0) add(85, 'riesgo', 'Este mes ya gastaste ' + R(-g.disponible) + ' de más. Hasta el día 1, solo lo esencial.', 'resumen');
+  else if (!g.sinIngreso && g.presupuesto > 0 && dia >= 5 && g.variable / g.presupuesto > (dia + 3) / (dia + g.dias - 1)) {
+    add(70, 'atento', 'Vas gastando más rápido que el mes. Para llegar bien: ' + R(Math.max(0, g.porDia)) + ' por día.', 'resumen');
+  }
+  // 5. Tarjeta muy usada
+  (d.cuentas || []).filter(function (c) { return c.tipo === 'tarjeta' && num(c.limite); }).forEach(function (c) {
+    var pct = (num(c.limite) - num(c.disponible)) / num(c.limite);
+    if (pct >= 0.7) add(75, 'atento', 'Usas el ' + Math.round(pct * 100) + '% de tu tarjeta ' + c.banco + '. Bajar de 30% cuida tu score.', 'resumen');
+  });
+  // 6. Préstamo caro activo con plata disponible
+  var D = resumenDeudas(d);
+  var prestamo = D.activas.filter(function (x) { return /pr[eé]stamo|empr[eé]stimo/i.test(x.item.nombre); })[0];
+  if (prestamo && V.sobra > 0) add(65, 'atento', prestamo.item.nombre + ' es tu deuda más cara. Si te sobra plata, adelanta cuotas.', 'mimes');
+  // 7. Intereses y seguros que se pueden evitar
+  var desde = sumarMes(M, -2) + '-01';
+  var evitables = movs.filter(function (m) { return m.fecha >= desde && m.monto > 0 && /seguro cart|juros|iof|multa|encargos/i.test(m.comercio); });
+  var totEv = suma(evitables, function (m) { return m.monto; });
+  if (totEv >= 15) add(60, 'atento', 'En 3 meses pagaste ' + R(totEv) + ' en intereses, IOF o seguros. Revisa cuáles puedes cortar.', 'movimientos');
+  // 8. Suscripciones
+  var subs = movs.filter(function (m) { return mesDe(m.fecha) === sumarMes(M, -1) && m.categoria === 'Suscripciones y apps' && m.monto > 0; });
+  var totSubs = suma(subs, function (m) { return m.monto; });
+  if (totSubs >= 250) add(50, 'atento', 'El mes pasado pagaste ' + R(totSubs) + ' en apps y suscripciones. ¿Usas todas?', 'analisis');
+  // 9. Delivery por encima de lo normal
+  var del = function (ym) { return suma(movs.filter(function (m) { return mesDe(m.fecha) === ym && m.categoria === 'Restaurantes y delivery' && m.monto > 0; }), function (m) { return m.monto; }); };
+  var prom = (del(sumarMes(M, -1)) + del(sumarMes(M, -2)) + del(sumarMes(M, -3))) / 3, ahora = del(M) / Math.max(1, dia) * diasDelMes(M);
+  if (prom > 100 && dia >= 7 && ahora > prom * 1.25) add(45, 'atento', 'Restaurantes y delivery van ' + Math.round((ahora / prom - 1) * 100) + '% arriba de lo normal este mes.', 'analisis');
+  // 10. Reserva de emergencia
+  var reserva = (d.suenos || []).filter(function (x) { return /reserva|emergencia/i.test(x.nombre); })[0];
+  if (!reserva && V.sobra > 0 && !atr.length) add(30, 'bien', 'Te sobran ' + R(V.sobra) + ' este mes. Separa una parte como reserva de emergencia.', 'mimes');
+  // 11. Bien encaminado
+  if (!out.length && !g.sinIngreso) add(10, 'bien', 'Vas bien: puedes gastar ' + R(Math.max(0, g.porDia)) + ' por día y llegar tranquilo a fin de mes.', 'resumen');
+
+  return out.sort(function (a, b) { return b.prio - a.prio; });
+}
+
 /** Plan de ejemplo (inventado) para ver Mi Mes sin conectar nada. */
 function planDemo(hoy) {
   var M = mesDe(hoy), ant = sumarMes(M, -1);
@@ -1084,7 +1146,7 @@ function rapida(attr, texto, ico, prim) {
 
 function vResumen(A) {
   var ult = S.movs.slice(0, 5);
-  return bloqueHoy() + bloqueTengoDebo() + bloqueGastado(A) + tarjetaMiMes() +
+  return bloqueHoy() + bloqueConsejos() + bloqueTengoDebo() + bloqueGastado(A) + tarjetaMiMes() +
     '<section class="card"><div class="card-cab"><h2>Últimos movimientos</h2><button class="link" data-ir="movimientos">Ver todos</button></div>' +
       (ult.length ? '<div class="lista">' + ult.map(filaMov).join('') + '</div>' : '<p class="vacio">Todavía no hay movimientos.</p>') +
     '</section>';
@@ -1402,6 +1464,15 @@ function bloqueHoy() {
     '<p class="small muted" style="margin:0">Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.</p></section>';
 }
 
+function bloqueConsejos() {
+  var c = consejos(datosPlan(), hoy).slice(0, 3);
+  if (!c.length) return '';
+  var ic = { riesgo: '!', atento: '→', bien: '✓' };
+  return '<section class="card consejos"><span class="eyebrow">Consejos para ti</span><ul>' + c.map(function (x) {
+    return '<li class="' + x.nivel + '"' + (x.ir ? ' data-ir="' + x.ir + '"' : '') + '><span class="ic">' + ic[x.nivel] + '</span><span>' + esc(x.texto) + '</span></li>';
+  }).join('') + '</ul></section>';
+}
+
 function bloqueTengoDebo() {
   var cuentas = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
   var tarjetas = S.cuentas.filter(function (c) { return c.tipo === 'tarjeta'; });
@@ -1498,7 +1569,7 @@ function sincronizar() {
 // ---------------------------------------------------------------- Mi Mes
 var NOMBRE_PRIO = { urgente: 'Urgente', importante: 'Importante', normal: 'Normal' };
 var TIPOS = { fijo: 'Fijo, cada mes', cuotas: 'En cuotas (deuda)', unico: 'Una sola vez', tarjeta: 'Factura de tarjeta' };
-function datosPlan() { return { plan: S.plan, pagos: S.pagos, suenos: S.suenos, movs: S.movs, cfg: S.cfg }; }
+function datosPlan() { return { plan: S.plan, pagos: S.pagos, suenos: S.suenos, movs: S.movs, cfg: S.cfg, cuentas: S.cuentas }; }
 function idNuevo() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function fechaCorta(f) { var p = String(f).slice(0, 10).split('-'); return p.length === 3 ? +p[2] + ' ' + MESES[+p[1] - 1] + ' ' + p[0] : f; }
