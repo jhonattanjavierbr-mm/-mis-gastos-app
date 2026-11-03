@@ -796,7 +796,9 @@ function consejos(d, hoy) {
   var add = function (prio, nivel, texto, ir) { out.push({ prio: prio, nivel: nivel, texto: texto, ir: ir || '' }); };
 
   // 1. Cuentas en negativo (cheque especial)
-  (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta' && num(c.saldo) < 0; }).forEach(function (c) {
+  // Lo que registraste a mano y el banco todavía no informa también cuenta para el saldo de esa cuenta
+  var pendCuenta = function (banco) { return suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.origen === 'Manual' && m.categoria === 'Ingreso' && m.monto < 0 && m.cuenta === banco; }), function (m) { return -m.monto; }); };
+  (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta' && num(c.saldo) + pendCuenta(c.banco) < 0; }).forEach(function (c) {
     add(100, 'riesgo', 'Tu cuenta ' + c.banco + ' está en negativo (' + R(-num(c.saldo)) + '). Cúbrela hoy: el cheque especial cobra intereses cada día.', 'resumen');
   });
   // 2. Pagos atrasados
