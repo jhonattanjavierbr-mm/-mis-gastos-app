@@ -38,7 +38,7 @@
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
-.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px calc(110px + env(safe-area-inset-bottom, 0px)); }
+.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px calc(170px + env(safe-area-inset-bottom, 0px)); }
 h1, h2, h3 { font-family: var(--f-display); font-weight: 800; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
 h2 { font-size: 18px; }
 h3 { font-size: 15px; font-weight: 700; }
@@ -173,6 +173,20 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .vacio { padding: 28px 12px; text-align: center; color: var(--muted); }
 
 /* Barra de pestañas */
+.pleg { display: grid; }
+.pleg.mes { background: var(--surface); border-radius: 18px; padding: 4px 10px 8px; }
+.pleg-cab { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; gap: 10px; align-items: center; width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 14px 4px; text-align: left; }
+.pleg.mes > .pleg-cab { border-bottom: 0; }
+.pleg-tit { display: grid; font-weight: 700; }
+.pleg-sub { font-size: 12px; font-weight: 500; color: var(--muted); }
+.pleg-tot { font-family: var(--f-display); font-weight: 800; }
+.pleg-fl { color: var(--muted); }
+.resumen-mov { grid-template-columns: 1.2fr 1fr 1fr; align-items: end; gap: 10px; padding: 14px 16px; }
+.resumen-mov > div { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.resumen-mov .v { font-family: var(--f-display); font-size: 22px; font-weight: 800; color: var(--ink); }
+.resumen-mov b { color: var(--ink); font-size: 15px; }
+.resumen-mov .pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; }
+.segmento.chico button { padding: 6px 8px; font-size: 12px; }
 .fab { position: fixed; z-index: 9; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--lima); color: var(--lima-ink); display: grid; place-items: center; box-shadow: 0 8px 24px rgb(0 0 0 / .45); }
 .fab:active { transform: scale(.94); }
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; justify-content: center; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: rgb(11 22 16 / 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
@@ -993,7 +1007,7 @@ function csvDePdf(r) {
 </script>
 
 <script id="app">
-var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '', ocultosSesion: {},
+var S = { movs: [], cfg: {}, categorias: [], demo: true, k: '', tab: 'resumen', periodo: '3m', busca: '', mesFiltro: '', ocultosSesion: {}, movVista: 'mes', movRef: '', abiertos: {},
   plan: [], pagos: [], suenos: [], cuentas: [], bancos: {}, mesPlan: '', planOrden: 'prioridad', verPagados: false };
 var hoy = (function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })();
 var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -1210,30 +1224,72 @@ function filaMov(m) {
     '<span class="tag-met ' + (m.metodo === 'credito' ? 's-cred' : 's-deb') + '">' + (NOMBRE_METODO[m.metodo] || m.metodo || '') + '</span></span></button>';
 }
 
-function vMovimientos() {
-  var meses = {}; S.movs.forEach(function (m) { meses[mesDe(m.fecha)] = true; });
-  var lista = S.movs.filter(function (m) {
-    if (S.mesFiltro && mesDe(m.fecha) !== S.mesFiltro) return false;
+// ---------------------------------------------------------------- Movimientos: por semana / mes / todo, con días plegables
+function sumarDias(f, n) { var d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function inicioSemana(f) { var d = new Date(f + 'T12:00:00Z').getUTCDay(); return sumarDias(f, -((d + 6) % 7)); }
+function rangoMov() {
+  var ref = S.movRef || hoy, v = S.movVista || 'mes';
+  if (v === 'semana') { var i = inicioSemana(ref), f = sumarDias(i, 6); return { desde: i, hasta: f, titulo: (i === inicioSemana(hoy) ? 'Esta semana' : fechaCorta(i).replace(/ \d{4}$/, '') + ' – ' + fechaCorta(f).replace(/ \d{4}$/, '')) }; }
+  if (v === 'mes') { var M = mesDe(ref); return { desde: M + '-01', hasta: M + '-31', titulo: cap(nomMes(M, true)) }; }
+  return { desde: '0000', hasta: '9999', titulo: 'Todo el historial' };
+}
+function moverMov(n) {
+  var v = S.movVista || 'mes', ref = S.movRef || hoy;
+  S.movRef = v === 'semana' ? sumarDias(ref, 7 * n) : sumarMes(mesDe(ref), n) + '-15';
+  render();
+}
+function filtrarMov(lista) {
+  return lista.filter(function (m) {
     if (S.metodoFiltro === 'credito' && m.metodo !== 'credito') return false;
     if (S.metodoFiltro === 'debito' && m.metodo === 'credito') return false;
     if (!S.busca) return true;
     var t = (m.comercio + ' ' + m.categoria + ' ' + m.cuenta + ' ' + m.nota).toLowerCase();
     return t.indexOf(S.busca.toLowerCase()) > -1;
   });
-  var dias = {}, orden = [];
-  lista.slice(0, 400).forEach(function (m) { if (!dias[m.fecha]) { dias[m.fecha] = []; orden.push(m.fecha); } dias[m.fecha].push(m); });
-  return '<div class="acciones"><button class="btn prim" data-accion="agregar">＋ Agregar gasto o ingreso</button><button class="btn" data-accion="importar">Importar</button></div>' +
-    '<div class="segmento ancho" role="group" aria-label="Tipo">' + [['', 'Todo'], ['credito', 'Crédito'], ['debito', 'Débito y Pix']].map(function (o) {
+}
+function cabPlegable(clave, titulo, sub, total, abierto) {
+  return '<button class="pleg-cab" data-plegar="' + esc(clave) + '" aria-expanded="' + abierto + '">' +
+    '<span class="pleg-tit">' + titulo + '<span class="pleg-sub">' + sub + '</span></span>' +
+    '<span class="num pleg-tot">' + R(total) + '</span><span class="pleg-fl">' + (abierto ? '▴' : '▾') + '</span></button>';
+}
+function vMovimientos() {
+  var v = S.movVista || 'mes', r = rangoMov(), buscando = !!S.busca;
+  var todos = filtrarMov(S.movs).filter(function (m) { return buscando || (m.fecha >= r.desde && m.fecha <= r.hasta); });
+  var gastos = todos.filter(esGasto), cred = suma(gastos.filter(function (m) { return m.metodo === 'credito'; }), function (m) { return m.monto; });
+  var tot = suma(gastos, function (m) { return m.monto; });
+  var ab = S.abiertos || {};
+  var html = '<div class="segmento ancho" role="group" aria-label="Período">' + [['semana', 'Semana'], ['mes', 'Mes'], ['todo', 'Todo']].map(function (o) {
+      return '<button data-movvista="' + o[0] + '" aria-pressed="' + (v === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+    (v !== 'todo' && !buscando ? '<div class="mes-nav"><button class="btn-ic" data-accion="mov-ant" aria-label="Anterior">‹</button><h2>' + r.titulo + '</h2><button class="btn-ic" data-accion="mov-sig" aria-label="Siguiente">›</button></div>' : '') +
+    '<div class="filtros"><input id="busca" type="search" placeholder="Buscar comercio, categoría…" value="' + esc(S.busca) + '"></div>' +
+    '<div class="segmento ancho chico" role="group" aria-label="Tipo">' + [['', 'Todo'], ['credito', 'Crédito'], ['debito', 'Débito y Pix']].map(function (o) {
       return '<button data-metodo="' + o[0] + '" aria-pressed="' + ((S.metodoFiltro || '') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
-    '<div class="filtros"><input id="busca" type="search" placeholder="Buscar comercio, categoría, cuenta…" value="' + esc(S.busca) + '">' +
-    '<select id="mesFiltro"><option value="">Todos los meses</option>' + Object.keys(meses).sort().reverse().map(function (ym) {
-      return '<option value="' + ym + '"' + (ym === S.mesFiltro ? ' selected' : '') + '>' + nomMes(ym, true) + '</option>'; }).join('') + '</select></div>' +
-    (orden.length ? orden.map(function (f) {
-      var d = new Date(f + 'T12:00:00Z');
-      var tot = suma(dias[f].filter(esGasto), function (m) { return m.monto; });
-      return '<div class="dia"><div class="dia-cab"><span>' + d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }) + '</span><span class="num">' + R(tot) + '</span></div>' + dias[f].map(filaMov).join('') + '</div>';
-    }).join('') : '<p class="vacio">Nada con ese filtro.</p>') +
-    '<p class="small muted">Toca un movimiento para cambiar su categoría. Los atenuados (pago de tarjeta, transferencias, ingresos) no cuentan como gasto.</p>';
+    '<section class="card resumen-mov"><div><span class="eyebrow">' + (buscando ? 'Resultados' : 'Gastado') + '</span><span class="num v">' + R0(tot) + '</span></div>' +
+      '<div><span class="pt s-cred"></span>Crédito <b class="num">' + R0(cred) + '</b></div><div><span class="pt s-deb"></span>Débito/Pix <b class="num">' + R0(tot - cred) + '</b></div></section>';
+  if (!todos.length) return html + '<p class="vacio">No hay movimientos en este período.</p>';
+
+  var porDia = {}, dias = [];
+  todos.forEach(function (m) { if (!porDia[m.fecha]) { porDia[m.fecha] = []; dias.push(m.fecha); } porDia[m.fecha].push(m); });
+  var bloqueDia = function (f, abiertoPorDefecto) {
+    var ms = porDia[f], clave = 'd' + f, abierto = buscando || (ab[clave] != null ? ab[clave] : abiertoPorDefecto);
+    var d = new Date(f + 'T12:00:00Z'), t = d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    return '<div class="pleg">' + cabPlegable(clave, cap(t), ms.length + ' movimiento' + (ms.length > 1 ? 's' : ''), suma(ms.filter(esGasto), function (m) { return m.monto; }), abierto) +
+      (abierto ? '<div class="lista">' + ms.map(filaMov).join('') + '</div>' : '') + '</div>';
+  };
+  if (v === 'todo' && !buscando) {
+    var meses = [], porMes = {};
+    dias.forEach(function (f) { var M = mesDe(f); if (!porMes[M]) { porMes[M] = []; meses.push(M); } porMes[M].push(f); });
+    html += meses.map(function (M, i) {
+      var clave = 'm' + M, abierto = ab[clave] != null ? ab[clave] : i === 0;
+      var ms = []; porMes[M].forEach(function (f) { ms = ms.concat(porDia[f]); });
+      return '<div class="pleg mes">' + cabPlegable(clave, cap(nomMes(M, true)), ms.length + ' movimientos', suma(ms.filter(esGasto), function (m) { return m.monto; }), abierto) +
+        (abierto ? porMes[M].map(function (f) { return bloqueDia(f, false); }).join('') : '') + '</div>';
+    }).join('');
+  } else {
+    html += dias.slice(0, buscando ? 60 : 400).map(function (f, i) { return bloqueDia(f, v === 'semana' || f === hoy || (v === 'mes' && i === 0)); }).join('');
+  }
+  return html + '<p class="small muted">Toca un día para abrirlo y un movimiento para cambiar su categoría. Los atenuados no cuentan como gasto. Usa el ＋ para agregar un gasto o ingreso.</p>' +
+    '<button class="link" data-accion="importar">Importar un extracto (CSV, OFX o PDF)</button>';
 }
 
 function segPeriodo() {
@@ -1939,19 +1995,22 @@ function confeti() {
 
 // ---------------------------------------------------------------- Eventos
 document.addEventListener('click', function (e) {
-  var t = e.target.closest('[data-tab],[data-ir],[data-mov],[data-periodo],[data-orden],[data-metodo],[data-accion]');
+  var t = e.target.closest('[data-tab],[data-ir],[data-mov],[data-periodo],[data-orden],[data-metodo],[data-movvista],[data-plegar],[data-accion]');
   if (!t) return;
   if (t.dataset.tab || t.dataset.ir) { S.tab = t.dataset.tab || t.dataset.ir; render(); scrollTo(0, 0); }
   else if (t.dataset.mov) abrirMov(t.dataset.mov);
   else if (t.dataset.periodo) { S.periodo = t.dataset.periodo; render(); }
   else if (t.dataset.orden) { S.planOrden = t.dataset.orden; render(); }
   else if (t.dataset.metodo != null) { S.metodoFiltro = t.dataset.metodo; render(); }
+  else if (t.dataset.movvista) { S.movVista = t.dataset.movvista; S.movRef = hoy; render(); }
+  else if (t.dataset.plegar) { S.abiertos = S.abiertos || {}; S.abiertos[t.dataset.plegar] = t.getAttribute('aria-expanded') !== 'true'; render(); }
   else ({
     agregar: abrirAgregar, importar: function () { $('#archivo').click(); },
     'guardar-mov': function () { guardarMov(t.dataset.id); }, 'borrar-mov': function () { borrarMov(t.dataset.id); },
     'guardar-nuevo': guardarNuevo,
     reintentar: cargar, conectar: conectar, desconectar: desconectar, sincronizar: sincronizar,
     'ocultar-consejo': function () { ocultarConsejo(t.dataset.texto); },
+    'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
     'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
     'mes-sig': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), 1); render(); },
     sembrar: sembrar, 'nuevo-item': function () { abrirItem(null); }, 'editar-item': function () { abrirItem(t.dataset.id); },
