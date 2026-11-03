@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793748836251";</script>
+<script>window.APP_VERSION="1793749266117";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -221,6 +221,13 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .rep-espera { opacity: .85; padding-block: 4px; }
 .rep-espera .pleg-cab { border-bottom: 0; }
 .rep-mini-fila { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.describir { box-shadow: inset 0 3px 0 #c08bff; gap: 12px; }
+.desc-mov { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.desc-mov > span:nth-child(2) { display: grid; min-width: 0; }
+.desc-mov b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desc-m { font-family: var(--f-display); font-weight: 800; font-size: 18px; }
+.chips.rapidos .chip { padding: 8px 12px; font-size: 14px; border: 0; }
+.chip.on { box-shadow: inset 0 0 0 2px var(--lima); }
 .fab { position: fixed; z-index: 9; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--lima); color: var(--lima-ink); display: grid; place-items: center; box-shadow: 0 8px 24px rgb(0 0 0 / .45); }
 .fab:active { transform: scale(.94); }
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; justify-content: center; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: rgb(11 22 16 / 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
@@ -1294,7 +1301,7 @@ function rapida(attr, texto, ico, prim) {
 
 // Inicio en 4 bloques: 1 número, 1 consejo, Tengo/Debo en dos cuadros, y lo que falta pagar
 function vResumen(A) {
-  return bloqueHoy() + consejoPrincipal() + duoTengoDebo() + filaPorPagar() +
+  return bloqueHoy() + consejoPrincipal() + bloqueDescribir() + duoTengoDebo() + filaPorPagar() +
     (S.verDetalle ? bloqueTengoDebo() + bloqueGastado(A) : '');
 }
 function consejoPrincipal() {
@@ -1353,13 +1360,65 @@ function graficoMeses(A) {
 }
 
 var NOMBRE_METODO = { credito: 'Crédito', debito: 'Débito', pix: 'Pix', boleto: 'Boleto', transferencia: 'Transf.', efectivo: 'Efectivo' };
+// Lo que escribiste tú («Jugo», «Cigarro»), sin las marcas internas del banco
+function descripcion(m) {
+  var n = String(m.nota || '').replace(/\s*of:\S+/g, '').trim();
+  return /^Banco:|^·$/.test(n) ? '' : n;
+}
 function filaMov(m) {
-  var exc = EXCLUIDAS.indexOf(m.categoria) > -1;
+  var exc = EXCLUIDAS.indexOf(m.categoria) > -1, desc = descripcion(m);
   return '<button class="mov' + (exc ? ' excluido' : '') + '" data-mov="' + esc(m.id) + '">' + logoBanco(m.cuenta) +
-    '<span style="min-width:0"><span class="nom">' + esc(nombreComercio(m.comercio)) + '</span>' +
-    '<span class="meta">' + esc(m.categoria) + (m.parcela ? ' · cuota ' + esc(m.parcela) : '') + (m.hora ? ' · ' + esc(m.hora) : '') + '</span></span>' +
+    '<span style="min-width:0"><span class="nom">' + esc(desc || nombreComercio(m.comercio)) + '</span>' +
+    '<span class="meta">' + (desc ? esc(nombreComercio(m.comercio)) + ' · ' : '') + esc(m.categoria) + (m.parcela ? ' · cuota ' + esc(m.parcela) : '') + (m.hora ? ' · ' + esc(m.hora) : '') + '</span></span>' +
     '<span class="m-col"><span class="m' + (m.monto < 0 ? ' entrada' : '') + '">' + (m.monto < 0 ? '+ ' : '') + R(Math.abs(m.monto)) + '</span>' +
     '<span class="tag-met ' + (m.metodo === 'credito' ? 's-cred' : 's-deb') + '">' + (NOMBRE_METODO[m.metodo] || m.metodo || '') + '</span></span></button>';
+}
+
+// ---------------------------------------------------------------- Gastos hormiga: anotar y describir en 2 toques
+var RAPIDOS = [['☕', 'Café', 'Restaurantes y delivery'], ['🧃', 'Jugo', 'Restaurantes y delivery'], ['🥐', 'Padaria', 'Restaurantes y delivery'],
+  ['🍫', 'Snack', 'Restaurantes y delivery'], ['🚬', 'Cigarro', 'Otros'], ['🍺', 'Cerveza', 'Ocio'], ['🚇', 'Metrô', 'Transporte'], ['🚕', 'Uber', 'Transporte']];
+function rapidosUsados() { try { return JSON.parse(localStorage.getItem('misgastos.rapidos') || '{}'); } catch (e) { return {}; } }
+function contarRapido(nombre) { var u = rapidosUsados(); u[nombre] = (u[nombre] || 0) + 1; try { localStorage.setItem('misgastos.rapidos', JSON.stringify(u)); } catch (e) { /* sin almacenamiento: orden fijo */ } }
+// Los que más usas primero
+function rapidosOrdenados() { var u = rapidosUsados(); return RAPIDOS.slice().sort(function (a, b) { return (u[b[1]] || 0) - (u[a[1]] || 0); }); }
+function chipsRapidos(accion, extra) {
+  return '<div class="chips rapidos">' + rapidosOrdenados().map(function (r) {
+    return '<button type="button" class="chip" data-accion="' + accion + '" data-nombre="' + r[1] + '" data-cat="' + r[2] + '"' + (extra || '') + '>' + r[0] + ' ' + r[1] + '</button>'; }).join('') + '</div>';
+}
+/** Compras chicas de los últimos 7 días que llegaron del banco sin que digas qué eran. */
+function porDescribir() {
+  var ign = {}; try { ign = JSON.parse(localStorage.getItem('misgastos.describir') || '{}'); } catch (e) { ign = {}; }
+  var desde = sumarDias(hoy, -7);
+  return S.movs.filter(function (m) { return esGasto(m) && m.monto <= 80 && m.fecha >= desde && PLANEADAS.indexOf(m.categoria) < 0 && m.categoria !== 'Suscripciones y apps' && !descripcion(m) && !ign[m.id] && !(S.saltados || {})[m.id] && !/^(applepay|manual)/i.test(m.origen); });
+}
+function bloqueDescribir() {
+  var l = porDescribir();
+  if (!l.length) return '';
+  var m = l[0];
+  return '<section class="card describir"><div class="card-cab"><span class="eyebrow">¿Qué fue esto?</span><span class="small muted">' + l.length + ' por describir</span></div>' +
+    '<div class="desc-mov">' + logoBanco(m.cuenta) + '<span><b>' + esc(nombreComercio(m.comercio)) + '</b><span class="small muted">' + fechaCorta(m.fecha).replace(/ \d{4}$/, '') + '</span></span><span class="num desc-m">' + R(m.monto) + '</span></div>' +
+    chipsRapidos('describir', ' data-id="' + esc(m.id) + '"') +
+    '<div class="acciones"><button class="btn" data-accion="describir-otro" data-id="' + esc(m.id) + '">✏️ Escribir</button><button class="link" data-accion="describir-saltar" data-id="' + esc(m.id) + '">Saltar</button></div></section>';
+}
+function describirMov(id, nombre, cat) {
+  var m = S.movs.filter(function (x) { return x.id === id; })[0];
+  if (!m || !nombre) return;
+  var nota = (nombre + ' ' + (String(m.nota || '').match(/of:\S+/g) || []).join(' ')).trim();
+  var cambios = { nota: nota };
+  if (cat && (m.categoria === 'Otros' || !m.categoria)) cambios.categoria = cat;
+  m.nota = nota; if (cambios.categoria) m.categoria = cambios.categoria;
+  contarRapido(nombre); render(); aviso('Anotado: ' + nombre);
+  if (!S.demo) llamar('api_actualizar', id, cambios, false).catch(function (e) { aviso('No se guardó: ' + e.message); });
+}
+function saltarDescribir(id) {
+  var ign = {}; try { ign = JSON.parse(localStorage.getItem('misgastos.describir') || '{}'); } catch (e) { ign = {}; }
+  ign[id] = 1; try { localStorage.setItem('misgastos.describir', JSON.stringify(ign)); } catch (e) { S.movs = S.movs; }
+  S.saltados = S.saltados || {}; S.saltados[id] = 1; render();
+}
+function abrirDescribirTexto(id) {
+  $('#dlg-form').innerHTML = '<h2>¿Qué fue?</h2><label class="campo">Descripción<input id="ds-txt" placeholder="Jugo de naranja, regalo…"></label>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="describir-guardar" data-id="' + esc(id) + '">Guardar</button><button class="btn" value="cancel">Cancelar</button></div>';
+  $('#dlg').showModal(); setTimeout(function () { var i = $('#ds-txt'); if (i) i.focus(); }, 50);
 }
 
 // ---------------------------------------------------------------- Movimientos: por semana / mes / todo, con días plegables
@@ -1560,6 +1619,7 @@ function abrirAgregar() {
   $('#dlg-form').innerHTML = '<h2>Agregar movimiento</h2>' +
     '<div class="chips"><label class="chip"><input type="radio" name="ag-tipo" value="gasto" checked>Gasto</label>' +
     '<label class="chip"><input type="radio" name="ag-tipo" value="ingreso">Ingreso (sueldo, Pix recibido)</label></div>' +
+    '<div id="ag-rapidos">' + chipsRapidos('rapido-elegir') + '</div>' +
     '<label class="campo">Monto (R$)<input id="ag-monto" inputmode="decimal" placeholder="25,90" required><span class="ayuda">Para tu sueldo, escribe el monto exacto que entró: así no se duplica cuando lo traiga el banco.</span></label>' +
     '<label class="campo">Dónde / qué<input id="ag-com" placeholder="Padaria, Pix a un amigo…"></label>' +
     '<label class="campo">Cuenta<select id="ag-cta">' + CUENTAS.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></label>' +
@@ -1600,14 +1660,17 @@ function borrarMov(id) {
 }
 function guardarNuevo() {
   var ingreso = (document.querySelector('input[name="ag-tipo"]:checked') || {}).value === 'ingreso';
+  if (!ingreso && S.rapidoCat && $('#ag-com').value === S.rapidoNombre) contarRapido(S.rapidoNombre);
   var datos = { monto: $('#ag-monto').value, comercio: $('#ag-com').value || (ingreso ? 'Sueldo' : ''), cuenta: $('#ag-cta').value,
     metodo: ingreso ? 'transferencia' : $('#ag-met').value, fecha: $('#ag-fecha').value, origen: 'Manual' };
   if (ingreso) { datos.tipo = 'entrada'; datos.categoria = 'Ingreso'; }
+  else if (S.rapidoCat && datos.comercio === S.rapidoNombre) datos.categoria = S.rapidoCat;
+  S.rapidoCat = S.rapidoNombre = '';
   if (!(parseFloat(String(datos.monto).replace(/\./g, '').replace(',', '.')) > 0)) { aviso('Escribe un monto'); return; }
   $('#dlg').close();
   if (S.demo) {
     var n = parseFloat(String(datos.monto).replace(/\./g, '').replace(',', '.'));
-    S.movs.unshift({ id: 'n' + Date.now(), fecha: datos.fecha, hora: '', comercio: datos.comercio || 'Sin nombre', monto: ingreso ? -n : n, categoria: ingreso ? 'Ingreso' : 'Otros', cuenta: datos.cuenta, metodo: datos.metodo, origen: 'Manual', parcela: '', nota: '' });
+    S.movs.unshift({ id: 'n' + Date.now(), fecha: datos.fecha, hora: '', comercio: datos.comercio || 'Sin nombre', monto: ingreso ? -n : n, categoria: datos.categoria || 'Otros', cuenta: datos.cuenta, metodo: datos.metodo, origen: 'Manual', parcela: '', nota: '' });
     render(); aviso('Agregado (solo en el ejemplo)'); return;
   }
   llamar('api_agregar', datos).then(function (m) { S.movs.unshift(m); render(); aviso(ingreso ? 'Ingreso registrado: ' + R(-m.monto) : 'Agregado en ' + m.categoria); })
@@ -2195,6 +2258,16 @@ document.addEventListener('click', function (e) {
     reintentar: cargar, conectar: conectar, desconectar: desconectar, sincronizar: sincronizar,
     'ocultar-consejo': function () { ocultarConsejo(t.dataset.texto); },
     'ver-detalle': function () { S.verDetalle = !S.verDetalle; render(); },
+    describir: function () { describirMov(t.dataset.id, t.dataset.nombre, t.dataset.cat); },
+    'describir-saltar': function () { saltarDescribir(t.dataset.id); },
+    'describir-otro': function () { abrirDescribirTexto(t.dataset.id); },
+    'describir-guardar': function () { var v = $('#ds-txt').value.trim(); $('#dlg').close(); describirMov(t.dataset.id, v, ''); },
+    'rapido-elegir': function () {
+      S.rapidoNombre = t.dataset.nombre; S.rapidoCat = t.dataset.cat; $('#ag-com').value = t.dataset.nombre;
+      document.querySelectorAll('#ag-rapidos .chip').forEach(function (c) { c.classList.toggle('on', c === t); });
+      var met = $('#ag-met'); if (met && met.value === 'pix') met.value = 'debito';
+      $('#ag-monto').focus();
+    },
     'ver-espera': function () { S.verEspera = !S.verEspera; render(); }, 'ver-todo-plan': function () { S.verTodoPlan = !S.verTodoPlan; render(); },
     'nuevo-gusto': function () { abrirItem(null, { grupo: 'Gustos', tipo: 'unico', prioridad: 'normal', nombre: t.dataset.nombre === 'Otro' ? '' : t.dataset.nombre }); }, 'ver-consejos': function () { S.verConsejos = !S.verConsejos; render(); },
     'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
