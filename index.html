@@ -773,10 +773,12 @@ function gastoDiario(d, hoy) {
   var dias = diasDelMes(M) - +hoy.slice(8, 10) + 1;
   var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000; });
   var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
-  var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); })) : null;
+  // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
+  var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0; }), function (m) { return -m.monto; }));
+  var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); }) + pendiente) : null;
   var esperando = !!V.entra && !cobro.length;
   var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
-    sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false };
+    sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false, pendienteBanco: pendiente };
   if (!esperando && enCuentas !== null) {
     var real = redondear(enCuentas - V.falta);
     if (real < r.disponible) { r.disponible = real; r.porDia = redondear(real / dias); r.limitadoPorCuentas = true; }
@@ -1356,8 +1358,10 @@ function abrirMov(id) {
   $('#dlg').showModal();
 }
 function abrirAgregar() {
-  $('#dlg-form').innerHTML = '<h2>Agregar gasto</h2>' +
-    '<label class="campo">Monto (R$)<input id="ag-monto" inputmode="decimal" placeholder="25,90" required></label>' +
+  $('#dlg-form').innerHTML = '<h2>Agregar movimiento</h2>' +
+    '<div class="chips"><label class="chip"><input type="radio" name="ag-tipo" value="gasto" checked>Gasto</label>' +
+    '<label class="chip"><input type="radio" name="ag-tipo" value="ingreso">Ingreso (sueldo, Pix recibido)</label></div>' +
+    '<label class="campo">Monto (R$)<input id="ag-monto" inputmode="decimal" placeholder="25,90" required><span class="ayuda">Para tu sueldo, escribe el monto exacto que entró: así no se duplica cuando lo traiga el banco.</span></label>' +
     '<label class="campo">Dónde / qué<input id="ag-com" placeholder="Padaria, Pix a un amigo…"></label>' +
     '<label class="campo">Cuenta<select id="ag-cta">' + CUENTAS.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></label>' +
     '<label class="campo">Método<select id="ag-met">' + Object.keys(METODOS).map(function (k) { return '<option value="' + k + '"' + (k === 'pix' ? ' selected' : '') + '>' + METODOS[k] + '</option>'; }).join('') + '</select></label>' +
@@ -1396,15 +1400,18 @@ function borrarMov(id) {
   llamar('api_borrar', id).then(quitar).catch(function (e) { aviso('No se borró: ' + e.message); });
 }
 function guardarNuevo() {
-  var datos = { monto: $('#ag-monto').value, comercio: $('#ag-com').value, cuenta: $('#ag-cta').value, metodo: $('#ag-met').value, fecha: $('#ag-fecha').value, origen: 'Manual' };
+  var ingreso = (document.querySelector('input[name="ag-tipo"]:checked') || {}).value === 'ingreso';
+  var datos = { monto: $('#ag-monto').value, comercio: $('#ag-com').value || (ingreso ? 'Sueldo' : ''), cuenta: $('#ag-cta').value,
+    metodo: ingreso ? 'transferencia' : $('#ag-met').value, fecha: $('#ag-fecha').value, origen: 'Manual' };
+  if (ingreso) { datos.tipo = 'entrada'; datos.categoria = 'Ingreso'; }
   if (!(parseFloat(String(datos.monto).replace(/\./g, '').replace(',', '.')) > 0)) { aviso('Escribe un monto'); return; }
   $('#dlg').close();
   if (S.demo) {
     var n = parseFloat(String(datos.monto).replace(/\./g, '').replace(',', '.'));
-    S.movs.unshift({ id: 'n' + Date.now(), fecha: datos.fecha, hora: '', comercio: datos.comercio || 'Sin nombre', monto: n, categoria: 'Otros', cuenta: datos.cuenta, metodo: datos.metodo, origen: 'Manual', parcela: '', nota: '' });
+    S.movs.unshift({ id: 'n' + Date.now(), fecha: datos.fecha, hora: '', comercio: datos.comercio || 'Sin nombre', monto: ingreso ? -n : n, categoria: ingreso ? 'Ingreso' : 'Otros', cuenta: datos.cuenta, metodo: datos.metodo, origen: 'Manual', parcela: '', nota: '' });
     render(); aviso('Agregado (solo en el ejemplo)'); return;
   }
-  llamar('api_agregar', datos).then(function (m) { S.movs.unshift(m); render(); aviso('Agregado en ' + m.categoria); })
+  llamar('api_agregar', datos).then(function (m) { S.movs.unshift(m); render(); aviso(ingreso ? 'Ingreso registrado: ' + R(-m.monto) : 'Agregado en ' + m.categoria); })
     .catch(function (e) { aviso('No se agregó: ' + e.message); });
 }
 // pdf.js se carga solo cuando hace falta leer un PDF
@@ -1524,7 +1531,8 @@ function bloqueTengoDebo() {
   if (!S.cuentas.length) {
     return '<section class="card"><h2>Tu plata</h2><p class="small muted" style="margin:0">Conecta tus bancos en Ajustes para ver aquí cuánto tienes y cuánto debes.</p></section>';
   }
-  var tengo = suma(cuentas, function (c) { return num(c.saldo); });
+  var pend = gastoDiario(datosPlan(), hoy).pendienteBanco;
+  var tengo = suma(cuentas, function (c) { return num(c.saldo); }) + pend;
   var D = resumenDeudas(datosPlan());
   var usadoTarj = usoTarjeta;
   var debo = suma(tarjetas, usadoTarj) + D.falta;
@@ -1550,7 +1558,8 @@ function bloqueTengoDebo() {
 
   return '<section class="dos-lados">' +
     '<div class="lado tengo"><div class="lado-cab"><span class="eyebrow">Tengo</span><span class="lado-total' + (tengo < 0 ? ' rojo' : '') + '">' + R0(tengo) + '</span></div>' +
-      '<p class="lado-ayuda">Plata en tus cuentas, hoy</p>' + filasTengo + '</div>' +
+      '<p class="lado-ayuda">Plata en tus cuentas, hoy</p>' + filasTengo +
+      (pend ? '<div class="fila-banco"><span class="logo-banco" style="background:var(--good-bg);color:var(--lima)">+</span><span class="fb-nom">Ingreso registrado<span class="fb-sub">El banco todavía no lo informa</span></span><span class="fb-monto" style="color:var(--lima)">' + R(pend) + '</span></div>' : '') + '</div>' +
     '<div class="lado debo"><div class="lado-cab"><span class="eyebrow">Debo</span><span class="lado-total">' + R0(debo) + '</span></div>' +
       '<p class="lado-ayuda">Tarjetas, préstamos y cuotas</p>' + filasTarj + filasDeuda + '</div>' +
   '</section>';
