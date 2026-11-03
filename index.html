@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
+<script>window.APP_VERSION="1793727549996";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -1062,8 +1063,17 @@ function llamar(fn) {
 // Al volver a la app (o tocar el contador) se traen las compras nuevas
 var ultimaCarga = 0;
 document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) buscarVersion();
   if (!document.hidden && conectado && Date.now() - ultimaCarga > 20000) cargar();
 });
+// App instalada: si hay una versión nueva publicada, recargar (sin esperar a que el iPhone borre su copia)
+function buscarVersion() {
+  if (!window.APP_VERSION || !window.fetch) return;
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (j && j.v && j.v !== window.APP_VERSION) location.reload();
+  }).catch(function () {});
+}
+setTimeout(buscarVersion, 3000);
 document.addEventListener('click', function (e) {
   if (e.target.closest && e.target.closest('#estado') && conectado) { $('#estado').textContent = 'Actualizando…'; cargar(); }
 });
