@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793727549996";</script>
+<script>window.APP_VERSION="1793728674154";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -188,6 +188,15 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .resumen-mov b { color: var(--ink); font-size: 15px; }
 .resumen-mov .pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; }
 .segmento.chico button { padding: 6px 8px; font-size: 12px; }
+.consejo-uno { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.35; }
+.consejo-uno .ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.consejo-uno.riesgo { background: var(--bad-bg); } .consejo-uno.riesgo .ic { background: var(--bad); color: var(--bg); }
+.consejo-uno.atento { background: var(--warn-bg); } .consejo-uno.atento .ic { background: var(--warn); color: var(--bg); }
+.consejo-uno.bien { background: var(--good-bg); } .consejo-uno.bien .ic { background: var(--good); color: var(--bg); }
+.mini.td { color: var(--ink); }
+.mini.td.tengo { box-shadow: inset 0 3px 0 var(--lima); } .mini.td.debo { box-shadow: inset 0 3px 0 var(--cred); }
+.link.centro { justify-self: center; margin-top: -4px; }
+.v-grande { font-family: var(--f-display); font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
 .fab { position: fixed; z-index: 9; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--lima); color: var(--lima-ink); display: grid; place-items: center; box-shadow: 0 8px 24px rgb(0 0 0 / .45); }
 .fab:active { transform: scale(.94); }
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; justify-content: center; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: rgb(11 22 16 / 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
@@ -1200,12 +1209,39 @@ function rapida(attr, texto, ico, prim) {
   return '<button class="rapida' + (prim ? ' prim' : '') + '" ' + attr + '><span class="circ">' + ico + '</span>' + texto + '</button>';
 }
 
+// Inicio en 4 bloques: 1 número, 1 consejo, Tengo/Debo en dos cuadros, y lo que falta pagar
 function vResumen(A) {
-  var ult = S.movs.slice(0, 5);
-  return bloqueHoy() + bloqueConsejos() + bloqueTengoDebo() + bloqueGastado(A) + tarjetaMiMes() +
-    '<section class="card"><div class="card-cab"><h2>Últimos movimientos</h2><button class="link" data-ir="movimientos">Ver todos</button></div>' +
-      (ult.length ? '<div class="lista">' + ult.map(filaMov).join('') + '</div>' : '<p class="vacio">Todavía no hay movimientos.</p>') +
-    '</section>';
+  return bloqueHoy() + consejoPrincipal() + duoTengoDebo() + filaPorPagar() +
+    (S.verDetalle ? bloqueTengoDebo() + bloqueGastado(A) : '');
+}
+function consejoPrincipal() {
+  var o = consejosOcultos(), ses = S.ocultosSesion || {}, ahora = Date.now();
+  var c = consejos(datosPlan(), hoy).filter(function (x) { return x.nivel === 'riesgo' || !((o[x.texto] && o[x.texto] > ahora) || ses[x.texto]); });
+  if (!c.length) return '';
+  var x = c[0], ic = { riesgo: '!', atento: '→', bien: '✓' };
+  return '<section class="consejo-uno ' + x.nivel + '"><span class="ic">' + ic[x.nivel] + '</span><span' + (x.ir ? ' data-ir="' + x.ir + '"' : '') + '>' + esc(x.texto) + '</span>' +
+    (c.length > 1 ? '<button class="link" data-accion="ver-consejos">+' + (c.length - 1) + '</button>' : '') + '</section>' +
+    (S.verConsejos ? bloqueConsejos() : '');
+}
+function duoTengoDebo() {
+  if (!S.cuentas.length) return '';
+  var cuentas = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
+  var tarjetas = S.cuentas.filter(function (c) { return c.tipo === 'tarjeta'; });
+  var tengo = suma(cuentas, function (c) { return num(c.saldo); }) + gastoDiario(datosPlan(), hoy).pendienteBanco;
+  var debo = suma(tarjetas, usoTarjeta) + resumenDeudas(datosPlan()).falta;
+  return '<section class="duo">' +
+    '<button class="mini td tengo" data-accion="ver-detalle"><span class="eyebrow">Tengo</span><span class="v num' + (tengo < 0 ? ' rojo' : '') + '">' + R0(tengo) + '</span><span class="small muted">en cuentas</span></button>' +
+    '<button class="mini td debo" data-accion="ver-detalle"><span class="eyebrow">Debo</span><span class="v num">' + R0(debo) + '</span><span class="small muted">tarjetas y deudas</span></button>' +
+    '</section>' + '<button class="link centro" data-accion="ver-detalle">' + (S.verDetalle ? 'Ocultar detalle ▴' : 'Ver detalle por banco ▾') + '</button>';
+}
+function filaPorPagar() {
+  if (!S.plan.length) return '';
+  var V = vistaMes(datosPlan(), mesDe(hoy), mesDe(hoy));
+  var prox = ordenarPagos(V.porPagar, 'prioridad')[0];
+  return '<button class="card cta" data-ir="mimes"><span style="display:grid;gap:4px;min-width:0"><span class="eyebrow">Falta pagar este mes</span>' +
+    '<span class="v-grande num">' + R0(V.falta) + '</span>' +
+    (prox ? '<span class="small muted">Lo próximo: ' + esc(prox.item.nombre) + ' · ' + R0(prox.monto) + '</span>' : '<span class="small muted">Todo pagado 🎉</span>') +
+    '</span><span class="flecha-der">›</span></button>';
 }
 function tile(t, v, s) { return '<div class="tile"><span class="eyebrow">' + t + '</span><span class="v num">' + v + '</span><span class="small muted">' + s + '</span></div>'; }
 function etiquetaPeriodo() { return { mes: 'este mes', '3m': '3 meses', '12m': '12 meses', todo: 'todo el historial' }[S.periodo]; }
@@ -1563,8 +1599,7 @@ function bloqueHoy() {
     return '<section class="card hoy espera">' +
       '<span class="eyebrow">Todavía no cobraste este mes</span>' +
       '<div class="hoy-monto num">' + (g.enCuentas !== null ? R0(g.enCuentas) : '—') + '<small> en tus cuentas</small></div>' +
-      '<p style="margin:0">' + (neg ? 'Estás en negativo: <b>evita gastos hasta que entre tu sueldo</b>.' : 'Gasta solo lo necesario hasta que entre tu sueldo.') + '</p>' +
-      '<p class="small muted" style="margin:0">Cuando cobres, si todo sale como en Mi Mes, podrás gastar unos <b style="color:var(--ink)">' + R0(Math.max(0, g.porDia)) + ' por día</b>.</p></section>';
+      '<p class="small muted" style="margin:0">' + (neg ? 'Evita gastos hasta que entre tu sueldo.' : 'Gasta solo lo necesario hasta cobrar.') + ' ¿Ya cobraste? Toca <b style="color:var(--ink)">＋ → Ingreso</b>.</p></section>';
   }
   var ok = g.porDia > 0, pct = g.presupuesto > 0 ? Math.min(1, Math.max(0, g.variable / g.presupuesto)) : 1;
   return '<section class="card hoy ' + (ok ? 'bien' : 'riesgo') + '">' +
@@ -1572,7 +1607,7 @@ function bloqueHoy() {
     '<div class="hoy-monto num">' + (ok ? R0(g.porDia) : R0(-g.disponible)) + '<small>' + (ok ? ' por día' : ' de más') + '</small></div>' +
     '<div class="barra-mes"><i style="width:' + (pct * 100).toFixed(1) + '%' + (ok ? '' : ';background:var(--bad)') + '"></i></div>' +
     '<div class="barra-leg"><span>Gastado ' + R0(g.variable) + ' de ' + R0(Math.max(0, g.presupuesto)) + '</span><span>Quedan ' + g.dias + ' días</span></div>' +
-    '<p class="small muted" style="margin:0">' + (g.limitadoPorCuentas ? 'Calculado con la plata que tienes hoy en tus cuentas, menos lo que falta pagar.' : 'Ya descontados alquiler, cuentas, impuestos y cuotas de Mi Mes.') + '</p></section>';
+    '</section>';
 }
 
 // «Entendido» oculta un consejo 15 días en este teléfono; si sus números cambian, vuelve a aparecer
@@ -2020,6 +2055,7 @@ document.addEventListener('click', function (e) {
     'guardar-nuevo': guardarNuevo,
     reintentar: cargar, conectar: conectar, desconectar: desconectar, sincronizar: sincronizar,
     'ocultar-consejo': function () { ocultarConsejo(t.dataset.texto); },
+    'ver-detalle': function () { S.verDetalle = !S.verDetalle; render(); }, 'ver-consejos': function () { S.verConsejos = !S.verConsejos; render(); },
     'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
     'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
     'mes-sig': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), 1); render(); },
