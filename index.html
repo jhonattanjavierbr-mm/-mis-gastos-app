@@ -173,6 +173,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .vacio { padding: 28px 12px; text-align: center; color: var(--muted); }
 
 /* Barra de pestañas */
+.fab { position: fixed; z-index: 9; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--lima); color: var(--lima-ink); display: grid; place-items: center; box-shadow: 0 8px 24px rgb(0 0 0 / .45); }
+.fab:active { transform: scale(.94); }
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; justify-content: center; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: rgb(11 22 16 / 0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
 .tabbar-in { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; max-width: 560px; }
 .tabbar button { background: none; border: 0; display: grid; justify-items: center; gap: 3px; padding: 6px 0; font-size: 11px; font-weight: 600; color: var(--muted); }
@@ -323,6 +325,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
   <main id="vista" class="vista"><p class="vacio">Cargando tus gastos…</p></main>
 </div>
 
+<button class="fab" data-accion="agregar" aria-label="Agregar gasto o ingreso"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav class="tabbar" aria-label="Secciones">
   <div class="tabbar-in" role="tablist">
     <button role="tab" data-tab="resumen" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
@@ -1219,7 +1222,8 @@ function vMovimientos() {
   });
   var dias = {}, orden = [];
   lista.slice(0, 400).forEach(function (m) { if (!dias[m.fecha]) { dias[m.fecha] = []; orden.push(m.fecha); } dias[m.fecha].push(m); });
-  return '<div class="segmento ancho" role="group" aria-label="Tipo">' + [['', 'Todo'], ['credito', 'Crédito'], ['debito', 'Débito y Pix']].map(function (o) {
+  return '<div class="acciones"><button class="btn prim" data-accion="agregar">＋ Agregar gasto o ingreso</button><button class="btn" data-accion="importar">Importar</button></div>' +
+    '<div class="segmento ancho" role="group" aria-label="Tipo">' + [['', 'Todo'], ['credito', 'Crédito'], ['debito', 'Débito y Pix']].map(function (o) {
       return '<button data-metodo="' + o[0] + '" aria-pressed="' + ((S.metodoFiltro || '') === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
     '<div class="filtros"><input id="busca" type="search" placeholder="Buscar comercio, categoría, cuenta…" value="' + esc(S.busca) + '">' +
     '<select id="mesFiltro"><option value="">Todos los meses</option>' + Object.keys(meses).sort().reverse().map(function (ym) {
@@ -1229,7 +1233,6 @@ function vMovimientos() {
       var tot = suma(dias[f].filter(esGasto), function (m) { return m.monto; });
       return '<div class="dia"><div class="dia-cab"><span>' + d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }) + '</span><span class="num">' + R(tot) + '</span></div>' + dias[f].map(filaMov).join('') + '</div>';
     }).join('') : '<p class="vacio">Nada con ese filtro.</p>') +
-    '<div class="acciones"><button class="btn" data-accion="agregar">＋ Agregar gasto</button><button class="btn" data-accion="importar">Importar extracto</button></div>' +
     '<p class="small muted">Toca un movimiento para cambiar su categoría. Los atenuados (pago de tarjeta, transferencias, ingresos) no cuentan como gasto.</p>';
 }
 
