@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793799943075";</script>
+<script>window.APP_VERSION="1793800348368";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -210,8 +210,22 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .mod-tot { font-family: var(--f-display); font-weight: 800; font-size: 18px; }
 .mod-add { width: 34px; height: 34px; margin-right: 14px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--lima); font-size: 20px; font-weight: 700; display: grid; place-items: center; }
 .mod-cuerpo { display: grid; gap: 12px; padding: 0 18px 18px; }
-.rep-ya.mod { box-shadow: inset 0 3px 0 var(--bad); } .rep-ya .mod-tot { color: var(--bad); }
-.rep-ok.mod { background: var(--surface); box-shadow: inset 0 3px 0 var(--good); color: var(--ink); } .rep-ok .mod-tot { color: var(--good); }
+.mod { box-shadow: none !important; }
+.rep-ya.mod { background: #4a1f1c; } .rep-ya .mod-tot { color: #ffb3a8; }
+.rep-ok.mod { background: #1f3d24; } .rep-ok .mod-tot { color: var(--good); }
+.rep-gustos.mod { background: #33244d; } .rep-gustos .mod-tot { color: #dcc2ff; }
+.rep-vida.mod { background: #1f2d4d; } .rep-vida .mod-tot { color: #b9ccff; }
+.rep-libre.mod { background: #234a20; } .rep-libre .mod-tot { color: var(--lima); }
+.rep-espera.mod { background: #45381a; } .rep-espera .mod-tot { color: #ffdc8a; }
+.mod-tarjeta.mod { background: #1d3b45; } .mod-tarjeta .mod-tot { color: #9fe0f0; }
+.mod-pagados.mod { background: #22302a; } .mod-pagados .mod-tot { color: #b7d9b0; }
+.mod-deudas.mod { background: #45261f; } .mod-deudas .mod-tot { color: #ffb48a; }
+.mod-suenos.mod { background: #3f2340; } .mod-suenos .mod-tot { color: #f5b8f0; }
+.mod-metas.mod { background: #3d3414; } .mod-metas .mod-tot { color: #ffe08a; }
+.mod .pago:hover, .mod .pago:focus-visible { background: rgb(255 255 255 / .06); }
+.mod .mod-add { background: rgb(255 255 255 / .1); }
+.mod .gusto, .mod .pleg-cab, .mod .grupo-cab { border-color: rgb(255 255 255 / .1); }
+.mod .pista, .mod .barra-mes { background: rgb(0 0 0 / .25); }
 .rep-espera.mod { opacity: 1; padding: 0; }
 .rep-barra { display: flex; gap: 3px; height: 18px; border-radius: 9px; overflow: hidden; width: 100%; }
 .rep-barra i { display: block; height: 100%; min-width: 4px; }
@@ -763,6 +777,15 @@ function vistaMes(d, M, mesHoy) {
     pagados: pagados.sort(function (a, b) { return String(b.pago.fecha).localeCompare(String(a.pago.fecha)); }),
     tarjeta: { tope: num((d.cfg || {}).tope_tarjeta_mes), gastado: gastoTarjeta(ctx.movs, '', M) }
   };
+}
+
+/** «Luz (octubre)»: si el pago tiene ref (0 = este mes, -1 = mes anterior), el mes se agrega solo según el mes del pago. */
+function nombrePago(o) {
+  var it = o.item || o, ref = it.ref;
+  if (ref === '' || ref == null || isNaN(Number(ref)) || !o.mes) return it.nombre;
+  var M = sumarMes(o.mes, Number(ref));
+  var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return it.nombre + ' (' + meses[+M.slice(5, 7) - 1] + ')';
 }
 
 /** prioridad: urgentes → importantes → normales, cada uno de mayor a menor. monto: todo de mayor a menor. */
@@ -1949,7 +1972,7 @@ function vMiMes() {
 
   if (V.tarjeta.tope && M === mesHoy) {
     var tg = V.tarjeta, pas = tg.gastado > tg.tope, pt = Math.min(1, tg.gastado / tg.tope);
-    html += modulo('tarjeta', { titulo: 'Tarjeta este mes', total: R0(tg.gastado), sub: pas ? '<span class="rojo">Pasaste el tope</span>' : 'Te quedan ' + R0(tg.tope - tg.gastado) + ' de tu tope',
+    html += modulo('tarjeta', { clase: 'mod-tarjeta', titulo: 'Tarjeta este mes', total: R0(tg.gastado), sub: pas ? '<span class="rojo">Pasaste el tope</span>' : 'Te quedan ' + R0(tg.tope - tg.gastado) + ' de tu tope',
       cuerpo: '<div class="barra-mes"><i style="width:' + (pt * 100).toFixed(1) + '%' + (pas ? ';background:var(--bad)' : '') + '"></i></div>' +
         '<div class="barra-leg"><span>Llevas ' + R0(tg.gastado) + '</span><span>Tope ' + R0(tg.tope) + '</span></div>' +
         '<p class="small muted" style="margin:0">Se paga en la factura del mes que viene.</p>' });
@@ -1968,7 +1991,7 @@ function vMiMes() {
   html += modulo('pagados', { titulo: 'Pagados', clase: 'mod-pagados', total: R0(V.pagado), sub: V.pagados.length + ' pagos', agregar: botonAgregar({ pagado: true }),
     cuerpo: V.pagados.length ? '<div class="lista">' + V.pagados.map(filaPagado).join('') + '</div>' : '<p class="small muted" style="margin:0">Cuando marques ✓ un pago, aparece aquí.</p>' });
 
-  html += modulo('deudas', { titulo: 'Deudas', total: R0(D.falta), sub: D.activas.length ? Math.round(D.pct * 100) + '% pagado · ' + D.activas.length + ' activas' : 'Sin deudas activas',
+  html += modulo('deudas', { clase: 'mod-deudas', titulo: 'Deudas', total: R0(D.falta), sub: D.activas.length ? Math.round(D.pct * 100) + '% pagado · ' + D.activas.length + ' activas' : 'Sin deudas activas',
     agregar: botonAgregar({ tipo: 'cuotas', grupo: 'Plazos' }),
     cuerpo: D.activas.length ? '<div class="barra-mes"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div>' +
       '<ul class="rank">' + D.activas.map(function (x) {
@@ -1977,7 +2000,7 @@ function vMiMes() {
       }).join('') + '</ul>' : '<p class="small muted" style="margin:0">No tienes deudas en cuotas. 🎉</p>' });
 
   var activos = S.suenos.filter(noCumplido);
-  html += modulo('suenos', { titulo: 'Sueños', total: R0(suma(activos, function (x) { return num(x.ahorrado); })), sub: activos.length ? activos.length + ' en camino · ahorrado' : 'Agrega lo que quieres lograr',
+  html += modulo('suenos', { clase: 'mod-suenos', titulo: 'Sueños', total: R0(suma(activos, function (x) { return num(x.ahorrado); })), sub: activos.length ? activos.length + ' en camino · ahorrado' : 'Agrega lo que quieres lograr',
     agregar: botonAgregar(null, 'nuevo-sueno'),
     cuerpo: activos.length ? '<ul class="rank">' + activos.map(function (x) {
       var pr = num(x.precio) ? num(x.ahorrado) / num(x.precio) : 0;
@@ -1987,7 +2010,7 @@ function vMiMes() {
         ' · faltan ' + R0(Math.max(0, num(x.precio) - num(x.ahorrado))) + '</span></li>';
     }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>' });
 
-  html += modulo('metas', { titulo: 'Metas cumplidas', total: '🏆 ' + logros.length,
+  html += modulo('metas', { clase: 'mod-metas', titulo: 'Metas cumplidas', total: '🏆 ' + logros.length,
     cuerpo: logros.length ? '<ul class="logros">' + logros.map(function (l) {
       return '<li><span class="ok-ic">✓</span><div><b>' + esc(l.titulo) + '</b><span class="small muted">' + esc(l.detalle) + (l.fecha ? ' · ' + fechaCorta(l.fecha) : '') + '</span></div></li>';
     }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>' });
@@ -2097,12 +2120,12 @@ function filaPago(o) {
   }
   return '<div class="pago" data-accion="editar-item" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
     '<span class="prio ' + esc(it.prioridad || 'normal') + '" title="' + (NOMBRE_PRIO[it.prioridad] || 'Normal') + '"></span>' +
-    '<span style="min-width:0"><span class="nom">' + esc(it.nombre) + '</span><span class="meta">' + meta.join(' · ') + '</span></span>' +
+    '<span style="min-width:0"><span class="nom">' + esc(nombrePago(o)) + '</span><span class="meta">' + meta.join(' · ') + '</span></span>' +
     '<span class="m num">' + R(o.monto) + '</span>' +
     '<button class="check" data-accion="pagar" data-id="' + esc(it.id) + '" data-mes="' + o.mes + '" data-n="' + (o.n || '') + '" data-monto="' + o.monto + '" aria-label="Marcar ' + esc(it.nombre) + ' como pagado"></button></div>';
 }
 function filaPagado(o) {
-  return '<div class="pago hecho"><span class="prio hecho"></span><span style="min-width:0"><span class="nom">' + esc(o.item.nombre) + '</span>' +
+  return '<div class="pago hecho"><span class="prio hecho"></span><span style="min-width:0"><span class="nom">' + esc(nombrePago(o)) + '</span>' +
     '<span class="meta">Pagado ' + fechaCorta(o.pago.fecha) + (o.n ? ' · cuota ' + o.n + '/' + (num(o.item.cuotas_total) || 1) : '') + '</span></span>' +
     '<span class="m num">' + R(o.monto) + '</span><button class="check on" data-accion="desmarcar" data-pago="' + esc(o.pago.id) + '" aria-label="Desmarcar ' + esc(o.item.nombre) + '"></button></div>';
 }
@@ -2153,7 +2176,11 @@ function abrirItem(id, base) {
   delete it.pagado;
   var grupos = GRUPOS_BASE.concat(S.plan.map(function (x) { return x.grupo; })).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
   $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar pago' : 'Nuevo pago') + '</h2>' +
-    '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a un amigo…"></label>' +
+    '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Luz, Internet, Contador…"></label>' +
+    '<div class="campo" id="it-ref-campo"' + (it.tipo === 'cuotas' || it.tipo === 'tarjeta' ? ' hidden' : '') + '>¿De qué mes es la cuenta?<div class="chips">' +
+      [['', 'No poner mes'], ['-1', 'Del mes anterior'], ['0', 'De este mes']].map(function (r) {
+        return '<label class="chip"><input type="radio" name="it-ref" value="' + r[0] + '"' + (String(it.ref == null ? '' : it.ref) === r[0] ? ' checked' : '') + '>' + r[1] + '</label>'; }).join('') +
+      '</div><span class="ayuda" id="it-ref-vista"></span></div>' +
     '<label class="campo">Monto (R$)<input id="it-monto" inputmode="decimal" value="' + esc(montoTexto(it.monto)) + '" placeholder="450,00"></label>' +
     '<label class="campo">Grupo<input id="it-grupo" list="lista-grupos" value="' + esc(it.grupo || '') + '" placeholder="Vivir, Personas…"><span class="ayuda">Elige uno o escribe un nombre nuevo para crear un grupo.</span></label>' +
     '<datalist id="lista-grupos">' + grupos.map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
@@ -2181,8 +2208,10 @@ function guardarItem(id) {
     id: id || idNuevo(), nombre: $('#it-nombre').value.trim(), monto: num($('#it-monto').value.replace(/\.(?=\d{3}(\D|$))/g, '')),
     grupo: $('#it-grupo').value.trim() || 'Otros', tipo: $('#it-tipo').value, prioridad: prio ? prio.value : 'normal',
     mes_inicio: $('#it-mes').value || mesDe(hoy), cuotas_total: '', pagadas_previas: '', cuenta: '', nota: $('#it-nota').value.trim(), creado: previo.creado || '',
+    ref: (document.querySelector('input[name="it-ref"]:checked') || {}).value || '',
     vence_dia: Math.min(31, Math.max(0, Math.round(num($('#it-vence').value)))) || ''
   };
+  if (obj.tipo === 'cuotas' || obj.tipo === 'tarjeta') obj.ref = '';
   if (obj.tipo === 'cuotas') { obj.cuotas_total = Math.max(1, Math.round(num($('#it-total').value))); obj.pagadas_previas = Math.max(0, Math.round(num($('#it-previas').value))); }
   if (obj.tipo === 'tarjeta') obj.cuenta = $('#it-cuenta').value;
   if (!obj.nombre) { aviso('Escribe un nombre'); return; }
@@ -2387,12 +2416,21 @@ document.addEventListener('click', function (e) {
     ahorrar: function () { abrirAhorro(t.dataset.id); }, 'guardar-ahorro': function () { guardarAhorro(t.dataset.id); }
   })[t.dataset.accion]();
 });
+// Muestra cómo va a quedar el nombre: «Luz (octubre)»
+function vistaRef() {
+  var v = $('#it-ref-vista'), n = $('#it-nombre');
+  if (!v || !n) return;
+  var ref = (document.querySelector('input[name="it-ref"]:checked') || {}).value || '';
+  v.textContent = ref === '' || !n.value.trim() ? '' : 'Este mes se va a ver como: ' + nombrePago({ item: { nombre: n.value.trim(), ref: ref }, mes: ($('#it-mes') || {}).value || mesDe(hoy) }) + '. Cada mes cambia solo.';
+}
 document.addEventListener('input', function (e) {
+  if (e.target.id === 'it-nombre') vistaRef();
   if (e.target.id === 'busca') { S.busca = e.target.value; var pos = e.target.selectionStart; render(); var b = $('#busca'); b.focus(); b.setSelectionRange(pos, pos); }
 });
 document.addEventListener('change', function (e) {
   if (e.target.id === 'mesFiltro') { S.mesFiltro = e.target.value; render(); }
-  if (e.target.id === 'it-tipo') { $('#it-cuotas').hidden = e.target.value !== 'cuotas'; $('#it-cta').hidden = e.target.value !== 'tarjeta'; }
+  if (e.target.id === 'it-tipo') { $('#it-cuotas').hidden = e.target.value !== 'cuotas'; $('#it-cta').hidden = e.target.value !== 'tarjeta'; $('#it-ref-campo').hidden = /cuotas|tarjeta/.test(e.target.value); vistaRef(); }
+  if (e.target.name === 'it-ref') vistaRef();
   if (e.target.id === 'archivo' && e.target.files[0]) { importar(e.target.files[0]); e.target.value = ''; }
 });
 document.addEventListener('submit', function (e) {
