@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793754326673";</script>
+<script>window.APP_VERSION="1793792321438";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -215,6 +215,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .gusto .pill { grid-column: 1 / -1; }
 .gusto .nom { font-weight: 700; }
 .gusto .num { font-family: var(--f-display); font-weight: 800; }
+.rep-vida { box-shadow: inset 0 3px 0 var(--cred); }
+.rep-vida .pleg-cab { border-bottom: 0; border-top: 1px solid var(--line); }
 .rep-libre { background: var(--good-bg); box-shadow: inset 0 3px 0 var(--lima); }
 .rep-dest { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
 .rep-dest .nom { font-weight: 700; } .rep-dest .num { font-weight: 800; }
@@ -867,6 +869,17 @@ function repartoSueldo(d, hoy) {
   var vari = function (ym) { return suma(movs.filter(function (m) { return esGasto(m) && mesDe(m.fecha) === ym && m.metodo !== 'credito' && PLANEADAS.indexOf(m.categoria) < 0; }), function (m) { return m.monto; }); };
   var meses = [1, 2, 3].map(function (i) { return vari(sumarMes(M, -i)); }).filter(function (x) { return x > 0; });
   var vida = redondear(meses.length ? suma(meses) / meses.length : 0);
+  var esVida = function (m) { return esGasto(m) && m.metodo !== 'credito' && PLANEADAS.indexOf(m.categoria) < 0; };
+  var vidaMovs = movs.filter(function (m) { return esVida(m) && mesDe(m.fecha) === M; });
+  var porCat = {};
+  movs.filter(function (m) { return esVida(m) && mesDe(m.fecha) >= sumarMes(M, -3) && mesDe(m.fecha) < M; }).forEach(function (m) {
+    var c = m.categoria || 'Otros'; porCat[c] = (porCat[c] || 0) + m.monto;
+  });
+  var nMeses = Math.max(1, meses.length);
+  vidaMovs.forEach(function (m) { var c = m.categoria || 'Otros'; if (!(c in porCat)) porCat[c] = 0; });
+  var vidaCats = Object.keys(porCat).map(function (c) {
+    return { nombre: c, estimado: redondear(porCat[c] / nMeses), gastado: redondear(suma(vidaMovs.filter(function (m) { return (m.categoria || 'Otros') === c; }), function (m) { return m.monto; })) };
+  }).sort(function (a, b) { return Math.max(b.estimado, b.gastado) - Math.max(a.estimado, a.gastado); });
   var colchon = 300;
   var sumaO = function (l) { return redondear(suma(l, function (o) { return o.monto; })); };
   var pagarYa = sumaO(ya), puedeEsperar = sumaO(espera);
@@ -892,7 +905,8 @@ function repartoSueldo(d, hoy) {
     cobrado: !!real, ingreso: ingreso, esperado: V.entra, extra: real && V.entra ? redondear(real - V.entra) : 0,
     pagado: pagado, gustosHechos: gustosHechos, queda: redondear(ingreso - pagado - gustosHechos),
     ya: ordenarPagos(ya, 'prioridad'), pagarYa: pagarYa, espera: espera.sort(function (a, b) { return (vence(a) || 99) - (vence(b) || 99); }), puedeEsperar: puedeEsperar,
-    vida: vida, colchon: colchon, resto: resto, gustos: gustos, totalGustos: totalGustos, libre: libre,
+    vida: vida, colchon: colchon, vidaCats: vidaCats, vidaMovs: vidaMovs,
+    vidaGastado: redondear(suma(vidaMovs, function (m) { return m.monto; })), resto: resto, gustos: gustos, totalGustos: totalGustos, libre: libre,
     falta: resto < 0 ? -resto : 0, reservaMeta: reservaMeta,
     reparto: reparto.map(function (r) { return { nombre: r[0], tipo: r[2], monto: redondear(libre * r[1]), pct: r[1] }; })
   };
@@ -2010,13 +2024,27 @@ function bloqueReparto() {
     }).join('') + '</div>' : '<p class="small muted" style="margin:0">¿Quieres comprar algo este mes? Agrégalo y te digo si alcanza.</p>') +
     '<div class="chips">' + [['🏠', 'Casa'], ['🏖️', 'Vacaciones'], ['👕', 'Ropa'], ['✨', 'Otro']].map(function (c) {
       return '<button class="chip" data-accion="nuevo-gusto" data-nombre="' + c[1] + '">' + c[0] + ' ' + c[1] + '</button>'; }).join('') + '</div></section>';
-  // 3. Lo que sobra
+  // 3. Día a día
+  var vg = r.vidaGastado, vpct = r.vida ? Math.min(1, vg / r.vida) : 0, pasado = r.vida && vg > r.vida;
+  h += '<section class="card rep-vida"><div class="card-cab"><h2>Día a día</h2><span class="num rep-tot">' + R0(r.vida) + '</span></div>' +
+    '<p class="small" style="margin:0;color:var(--ink-2)">Lo que sueles gastar al mes con débito y Pix: comida, transporte, gastos chicos.' + (r.colchon ? ' Más ' + R0(r.colchon) + ' de colchón.' : '') + '</p>' +
+    '<div class="barra-mes"><i style="width:' + (vpct * 100).toFixed(1) + '%;background:' + (pasado ? 'var(--bad)' : 'var(--cred)') + '"></i></div>' +
+    '<div class="barra-leg"><span>Llevas ' + R0(vg) + '</span><span>' + (pasado ? '<b style="color:var(--bad)">Pasaste ' + R0(vg - r.vida) + '</b>' : 'Te quedan ' + R0(Math.max(0, r.vida - vg))) + '</span></div>' +
+    (r.vidaCats.length ? '<ul class="rank">' + r.vidaCats.slice(0, 6).map(function (c) {
+      var p = c.estimado ? Math.min(1, c.gastado / c.estimado) : 0;
+      return '<li><span class="nom">' + esc(c.nombre) + '</span><span class="num">' + R0(c.gastado) + ' <span class="muted small">de ' + R0(c.estimado) + '</span></span>' +
+        '<span class="pista"><i style="width:' + (p * 100).toFixed(1) + '%;background:' + (c.gastado > c.estimado ? 'var(--bad)' : 'var(--cred)') + '"></i></span></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Todavía no hay meses anteriores para estimarlo.</p>') +
+    (r.vidaMovs.length ? '<button class="pleg-cab" data-accion="ver-vida" aria-expanded="' + !!S.verVida + '"><span class="pleg-tit">Compras de este mes<span class="pleg-sub">' + r.vidaMovs.length + ' movimientos</span></span><span class="num pleg-tot">' + R0(vg) + '</span><span class="pleg-fl">' + (S.verVida ? '▴' : '▾') + '</span></button>' +
+      (S.verVida ? '<div class="lista">' + r.vidaMovs.slice(0, 60).map(filaMov).join('') + '</div>' : '') : '') +
+    '</section>';
+  // 4. Lo que sobra
   if (r.libre > 0) h += '<section class="card rep-libre"><div class="card-cab"><h2>Te sobran</h2><span class="hoy-monto num" style="font-size:30px">' + R0(r.libre) + '</span></div>' +
     '<p class="small" style="margin:0;color:var(--ink-2)">Sepáralos apenas cobres, antes de gastarlos:</p>' +
     r.reparto.map(function (x) {
       return '<div class="rep-dest"><span class="nom">' + esc(x.nombre) + '</span><span class="num">' + R0(x.monto) + '</span><span class="pista"><i style="width:' + (x.pct * 100) + '%"></i></span></div>'; }).join('') +
     '</section>';
-  // 4. Puede esperar (menos importante: plegado)
+  // 5. Puede esperar (menos importante: plegado)
   if (r.espera.length) h += '<section class="card rep-espera"><button class="pleg-cab" data-accion="ver-espera" aria-expanded="' + !!S.verEspera + '"><span class="pleg-tit">Puede esperar<span class="pleg-sub">' +
     r.espera.length + ' pagos más adelante en el mes</span></span><span class="num pleg-tot">' + R0(r.puedeEsperar) + '</span><span class="pleg-fl">' + (S.verEspera ? '▴' : '▾') + '</span></button>' +
     (S.verEspera ? '<div class="lista">' + r.espera.map(filaPago).join('') + '</div>' : '') + '</section>';
@@ -2275,7 +2303,7 @@ document.addEventListener('click', function (e) {
       var met = $('#ag-met'); if (met && met.value === 'pix') met.value = 'debito';
       $('#ag-monto').focus();
     },
-    'ver-espera': function () { S.verEspera = !S.verEspera; render(); }, 'ver-todo-plan': function () { S.verTodoPlan = !S.verTodoPlan; render(); },
+    'ver-espera': function () { S.verEspera = !S.verEspera; render(); }, 'ver-vida': function () { S.verVida = !S.verVida; render(); }, 'ver-todo-plan': function () { S.verTodoPlan = !S.verTodoPlan; render(); },
     'nuevo-gusto': function () { abrirItem(null, { grupo: 'Gustos', tipo: 'unico', prioridad: 'normal', nombre: t.dataset.nombre === 'Otro' ? '' : t.dataset.nombre }); }, 'ver-consejos': function () { S.verConsejos = !S.verConsejos; render(); },
     'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
     'mes-ant': function () { S.mesPlan = sumarMes(S.mesPlan || mesDe(hoy), -1); render(); },
