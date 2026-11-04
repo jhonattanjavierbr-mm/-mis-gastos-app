@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793801219552";</script>
+<script>window.APP_VERSION="1793801650470";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -880,7 +880,8 @@ function gastoDiario(d, hoy) {
   var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
   // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
   // …salvo que después corregiste a mano el saldo de esa cuenta (el saldo nuevo ya lo incluye)
-  var corregida = function (m) { return (d.cuentas || []).some(function (c) { return c.manual && c.banco === m.cuenta && String(c.actualizado) >= String(m.creado || m.fecha); }); };
+  // (cualquier cuenta: el ingreso puede haberse registrado con otra cuenta elegida por defecto)
+  var corregida = function (m) { return (d.cuentas || []).some(function (c) { return c.manual && String(c.actualizado) >= String(m.creado || m.fecha); }); };
   var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0 && !corregida(m); }), function (m) { return -m.monto; }));
   var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); }) + pendiente) : null;
   var esperando = !!V.entra && !cobro.length;
