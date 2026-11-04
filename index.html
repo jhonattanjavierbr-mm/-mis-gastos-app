@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793792321438";</script>
+<script>window.APP_VERSION="1793799166961";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -167,8 +167,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .form { display: grid; gap: 14px; }
 .campo { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
 .campo input, .campo select { width: 100%; font-size: 16px; color: var(--ink); background: var(--surface-2); border: 0; border-radius: 14px; padding: 12px 14px; }
-.check { display: flex; gap: 10px; align-items: center; font-size: 14px; }
-.check input { accent-color: var(--lima); width: 18px; height: 18px; }
+.casilla { display: flex; gap: 10px; align-items: center; font-size: 14px; }
+.casilla input { accent-color: var(--lima); width: 18px; height: 18px; }
 .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--lima); color: var(--lima-ink); font-weight: 700; padding: 12px 18px; border-radius: 99px; font-size: 14px; z-index: 20; max-width: calc(100vw - 32px); }
 #tip { position: fixed; z-index: 30; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 10px; white-space: nowrap; }
 .vacio { padding: 28px 12px; text-align: center; color: var(--muted); }
@@ -203,6 +203,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .rep-ley span { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); }
 .rep-ley b { width: 12px; height: 12px; border-radius: 4px; }
 .rep-ley em { font-style: normal; font-weight: 700; color: var(--ink); }
+.btn.ancho { width: 100%; }
 .rep-recibido { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: -4px; }
 .rep-recibido b { color: var(--ink-2); }
 .rep-alerta { background: var(--bad-bg); color: var(--bad); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
@@ -1630,7 +1631,7 @@ function abrirMov(id) {
     '<p class="small muted" style="margin:0">' + esc(m.fecha) + (m.hora ? ' · ' + esc(m.hora) : '') + ' · ' + R(m.monto) + ' · ' + esc(m.cuenta) + ' · ' + esc(METODOS[m.metodo] || m.metodo) + '<br>Origen: ' + esc(m.origen) + (m.nota ? ' · ' + esc(m.nota) : '') + '</p>' +
     '<label class="campo">Categoría<select id="ed-cat">' + S.categorias.map(function (c) { return '<option' + (c === m.categoria ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
     '<label class="campo">Método<select id="ed-met">' + Object.keys(METODOS).map(function (k) { return '<option value="' + k + '"' + (k === m.metodo ? ' selected' : '') + '>' + METODOS[k] + '</option>'; }).join('') + '</select></label>' +
-    '<label class="check"><input type="checkbox" id="ed-rec" checked> Usar esta categoría siempre para este comercio</label>' +
+    '<label class="casilla"><input type="checkbox" id="ed-rec" checked> Usar esta categoría siempre para este comercio</label>' +
     '<div class="acciones"><button class="btn prim" value="guardar" type="button" data-accion="guardar-mov" data-id="' + esc(id) + '">Guardar</button><button class="btn" value="cancel">Cerrar</button><button class="btn peligro" type="button" data-accion="borrar-mov" data-id="' + esc(id) + '">Borrar</button></div>';
   $('#dlg').showModal();
 }
@@ -2011,6 +2012,7 @@ function bloqueReparto() {
     (r.falta ? '<div class="rep-alerta">No alcanza: faltan <b>' + R0(r.falta) + '</b>. Pasa algo de «Puede esperar» al mes que viene.</div>' : '') +
     '</section>';
   // 1. Pagar ya (lo más importante, en rojo)
+  h += '<button class="btn prim ancho" data-accion="nuevo-item">＋ Agregar un pago</button>';
   if (r.ya.length) h += '<section class="card rep-ya"><div class="card-cab"><h2>Pagar ya</h2><span class="num rep-tot">' + R0(r.pagarYa) + '</span></div>' +
     '<p class="small" style="margin:0;color:var(--ink-2)">Atrasado, urgente o vence en 7 días. Marca ✓ al pagar.</p><div class="lista">' + r.ya.map(filaPago).join('') + '</div></section>';
   else h += '<section class="card rep-ok"><h2>✓ Nada urgente por pagar</h2></section>';
@@ -2117,7 +2119,7 @@ function pagar(t) {
 }
 
 function abrirItem(id, base) {
-  var it = S.plan.filter(function (x) { return x.id === id; })[0] || Object.assign({ tipo: 'fijo', prioridad: 'normal', grupo: '', mes_inicio: S.mesPlan || mesDe(hoy) }, base || {});
+  var it = S.plan.filter(function (x) { return x.id === id; })[0] || Object.assign({ tipo: 'unico', prioridad: 'normal', grupo: '', mes_inicio: S.mesPlan || mesDe(hoy) }, base || {});
   var grupos = GRUPOS_BASE.concat(S.plan.map(function (x) { return x.grupo; })).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
   $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar pago' : 'Nuevo pago') + '</h2>' +
     '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a un amigo…"></label>' +
@@ -2136,6 +2138,7 @@ function abrirItem(id, base) {
       '<label class="campo">Vence el día<input id="it-vence" inputmode="numeric" placeholder="Ej: 10" value="' + esc(it.vence_dia || '') + '"></label></div>' +
     '<span class="ayuda">Con el día de vencimiento te aviso por email 2 días antes y el mismo día.</span>' +
     '<label class="campo">Nota<input id="it-nota" value="' + esc(it.nota || '') + '" placeholder="Opcional"></label>' +
+    (id ? '' : '<label class="casilla"><input type="checkbox" id="it-pagado"> Ya lo pagué (descontarlo ahora)</label>') +
     '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-item" data-id="' + esc(id || '') + '">Guardar</button><button class="btn" value="cancel">Cerrar</button>' +
     (id ? '<button class="btn peligro" type="button" data-accion="borrar-item" data-id="' + esc(id) + '">Borrar</button>' : '') + '</div>';
   $('#dlg').showModal();
@@ -2153,9 +2156,14 @@ function guardarItem(id) {
   if (obj.tipo === 'tarjeta') obj.cuenta = $('#it-cuenta').value;
   if (!obj.nombre) { aviso('Escribe un nombre'); return; }
   if (!(obj.monto > 0)) { aviso('Escribe el monto'); return; }
+  var yaPagado = !id && $('#it-pagado') && $('#it-pagado').checked;
   $('#dlg').close();
   guardarEn('Plan', obj);
-  aviso(id ? 'Guardado' : 'Agregado a ' + obj.grupo);
+  if (yaPagado) {
+    var M = obj.mes_inicio || mesDe(hoy);
+    guardarEn('Pagos', { id: idNuevo(), item: obj.id, mes: M, monto: obj.monto, fecha: hoy, cuota: obj.tipo === 'cuotas' ? num(obj.pagadas_previas) + 1 : '' });
+    aviso('Pagado: ' + obj.nombre + ' · ' + R(obj.monto));
+  } else aviso(id ? 'Guardado' : 'Agregado a ' + obj.grupo);
 }
 function borrarItem(id) {
   var b = document.querySelector('[data-accion="borrar-item"]');
