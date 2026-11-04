@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793749266117";</script>
+<script>window.APP_VERSION="1793754326673";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -203,6 +203,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .rep-ley span { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; font-size: 13px; color: var(--ink-2); }
 .rep-ley b { width: 12px; height: 12px; border-radius: 4px; }
 .rep-ley em { font-style: normal; font-weight: 700; color: var(--ink); }
+.rep-recibido { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: -4px; }
+.rep-recibido b { color: var(--ink-2); }
 .rep-alerta { background: var(--bad-bg); color: var(--bad); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
 .rep-tot { font-family: var(--f-display); font-weight: 800; font-size: 20px; }
 .rep-ya { background: var(--bad-bg); box-shadow: inset 0 3px 0 var(--bad); }
@@ -876,6 +878,7 @@ function repartoSueldo(d, hoy) {
     gustos.push({ item: o.item, monto: o.monto, estado: est, pago: o.pago, alcanza: est === 'parcial' ? redondear(quedan + o.monto) : 0 });
   });
   var totalGustos = sumaO(gustos.filter(function (g) { return !g.pago; }));
+  var gustosHechos = sumaO(gustos.filter(function (g) { return g.pago; }));
   var libre = redondear(Math.max(0, resto - totalGustos));
   var D = resumenDeudas(d);
   var cara = D.activas.filter(function (x) { return /pr[eé]stamo|empr[eé]stimo/i.test(x.item.nombre); })[0];
@@ -887,7 +890,8 @@ function repartoSueldo(d, hoy) {
     : [['Invertir', 0.5, 'inversion'], ['Tus sueños', 0.5, 'suenos']];
   return {
     cobrado: !!real, ingreso: ingreso, esperado: V.entra, extra: real && V.entra ? redondear(real - V.entra) : 0,
-    pagado: pagado, ya: ordenarPagos(ya, 'prioridad'), pagarYa: pagarYa, espera: espera.sort(function (a, b) { return (vence(a) || 99) - (vence(b) || 99); }), puedeEsperar: puedeEsperar,
+    pagado: pagado, gustosHechos: gustosHechos, queda: redondear(ingreso - pagado - gustosHechos),
+    ya: ordenarPagos(ya, 'prioridad'), pagarYa: pagarYa, espera: espera.sort(function (a, b) { return (vence(a) || 99) - (vence(b) || 99); }), puedeEsperar: puedeEsperar,
     vida: vida, colchon: colchon, resto: resto, gustos: gustos, totalGustos: totalGustos, libre: libre,
     falta: resto < 0 ? -resto : 0, reservaMeta: reservaMeta,
     reparto: reparto.map(function (r) { return { nombre: r[0], tipo: r[2], monto: redondear(libre * r[1]), pct: r[1] }; })
@@ -1330,7 +1334,8 @@ function filaPorPagar() {
   if (r.ingreso) {
     var seg = [['pagado', r.pagado], ['ya', r.pagarYa], ['espera', r.puedeEsperar], ['vida', r.vida + r.colchon], ['gustos', r.totalGustos], ['libre', r.libre]].filter(function (x) { return x[1] > 0; });
     return '<button class="card cta rep-mini" data-ir="mimes"><span style="display:grid;gap:8px;min-width:0;width:100%">' +
-      '<span class="card-cab"><span class="eyebrow">Tu sueldo, repartido</span><span class="flecha-der">›</span></span>' +
+      '<span class="card-cab"><span class="eyebrow">Te queda de tu sueldo</span><span class="flecha-der">›</span></span>' +
+      '<span class="v-grande num' + (r.queda < 0 ? ' rojo' : '') + '">' + R0(r.queda) + ' <small class="small muted" style="font-weight:500">de ' + R0(r.ingreso) + '</small></span>' +
       '<span class="rep-barra">' + seg.map(function (x) { return '<i style="flex:' + x[1] + ';background:' + COL[x[0]] + '"></i>'; }).join('') + '</span>' +
       '<span class="rep-mini-fila">' + (r.pagarYa ? '<span><b style="color:var(--bad)">' + R0(r.pagarYa) + '</b> pagar ya</span>' : '<span>✓ nada urgente</span>') +
       (r.falta ? '<span><b style="color:var(--bad)">faltan ' + R0(r.falta) + '</b></span>' : '<span><b style="color:var(--lima)">' + R0(r.libre) + '</b> libres</span>') + '</span></span></button>';
@@ -1981,9 +1986,11 @@ function bloqueReparto() {
     ['vida', 'Día a día', r.vida + r.colchon], ['gustos', 'Gustos', r.totalGustos], ['libre', 'Libre', r.libre]].filter(function (x) { return x[2] > 0; });
   var tot = Math.max(r.ingreso, suma(seg, function (x) { return x[2]; }));
   var h = '<section class="card reparto">' +
-    '<div class="card-cab"><span class="eyebrow">' + (r.cobrado ? 'Tu sueldo de este mes' : 'Lo que esperas cobrar') + '</span>' +
+    '<div class="card-cab"><span class="eyebrow">' + (r.cobrado ? 'Te queda' : 'Te quedará al cobrar') + '</span>' +
       (r.extra > 0 ? '<span class="pill bien">+' + R0(r.extra) + ' de lo esperado 🎉</span>' : !r.cobrado ? '<button class="link" data-accion="editar-ingreso">Editar</button>' : '') + '</div>' +
-    '<div class="hoy-monto num">' + R0(r.ingreso) + '</div>' +
+    '<div class="hoy-monto num' + (r.queda < 0 ? ' rojo' : '') + '">' + R0(r.queda) + '</div>' +
+    '<div class="rep-recibido"><span>' + (r.cobrado ? 'Recibiste' : 'Esperas') + ' <b class="num">' + R0(r.ingreso) + '</b></span>' +
+      (r.pagado + r.gustosHechos ? '<span>Ya pagaste <b class="num">' + R0(r.pagado + r.gustosHechos) + '</b></span>' : '<span>Todavía no marcaste pagos</span>') + '</div>' +
     '<div class="rep-barra">' + seg.map(function (x) { return '<i style="flex:' + x[2] + ';background:' + COL[x[0]] + '"></i>'; }).join('') + '</div>' +
     '<div class="rep-ley">' + seg.map(function (x) {
       return '<span><b style="background:' + COL[x[0]] + '"></b>' + x[1] + '<em class="num">' + R0(x[2]) + '</em></span>'; }).join('') + '</div>' +
