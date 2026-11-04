@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793799166961";</script>
+<script>window.APP_VERSION="1793799467615";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -197,6 +197,17 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .mini.td.tengo { box-shadow: inset 0 3px 0 var(--lima); } .mini.td.debo { box-shadow: inset 0 3px 0 var(--cred); }
 .link.centro { justify-self: center; margin-top: -4px; }
 .v-grande { font-family: var(--f-display); font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.mod { padding: 0; gap: 0; overflow: hidden; }
+.mod-cab { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.mod-tog { display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; gap: 10px; align-items: center; background: none; border: 0; padding: 16px 6px 16px 18px; text-align: left; color: var(--ink); min-width: 0; }
+.mod-tit { display: grid; min-width: 0; }
+.mod-tit h2 { font-size: 17px; }
+.mod-tot { font-family: var(--f-display); font-weight: 800; font-size: 18px; }
+.mod-add { width: 34px; height: 34px; margin-right: 14px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--lima); font-size: 20px; font-weight: 700; display: grid; place-items: center; }
+.mod-cuerpo { display: grid; gap: 12px; padding: 0 18px 18px; }
+.rep-ya.mod { box-shadow: inset 0 3px 0 var(--bad); } .rep-ya .mod-tot { color: var(--bad); }
+.rep-ok.mod { background: var(--surface); box-shadow: inset 0 3px 0 var(--good); color: var(--ink); } .rep-ok .mod-tot { color: var(--good); }
+.rep-espera.mod { opacity: 1; padding: 0; }
 .rep-barra { display: flex; gap: 3px; height: 18px; border-radius: 9px; overflow: hidden; width: 100%; }
 .rep-barra i { display: block; height: 100%; min-width: 4px; }
 .rep-ley { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
@@ -1933,73 +1944,83 @@ function vMiMes() {
 
   if (V.tarjeta.tope && M === mesHoy) {
     var tg = V.tarjeta, pas = tg.gastado > tg.tope, pt = Math.min(1, tg.gastado / tg.tope);
-    html += '<section class="card"><div class="card-cab"><h2>Tarjeta este mes</h2><span class="pill ' + (pas ? 'riesgo' : pt > 0.8 ? 'atento' : 'bien') + '">' +
-      (pas ? 'Pasaste el tope' : 'Te quedan ' + R0(tg.tope - tg.gastado)) + '</span></div>' +
-      '<div class="barra-mes"><i style="width:' + (pt * 100).toFixed(1) + '%' + (pas ? ';background:var(--bad)' : '') + '"></i></div>' +
-      '<div class="barra-leg"><span>Llevas ' + R0(tg.gastado) + '</span><span>Tope ' + R0(tg.tope) + '</span></div>' +
-      '<p class="small muted" style="margin:0">Se paga en la factura del mes que viene.</p></section>';
+    html += modulo('tarjeta', { titulo: 'Tarjeta este mes', total: R0(tg.gastado), sub: pas ? '<span class="rojo">Pasaste el tope</span>' : 'Te quedan ' + R0(tg.tope - tg.gastado) + ' de tu tope',
+      cuerpo: '<div class="barra-mes"><i style="width:' + (pt * 100).toFixed(1) + '%' + (pas ? ';background:var(--bad)' : '') + '"></i></div>' +
+        '<div class="barra-leg"><span>Llevas ' + R0(tg.gastado) + '</span><span>Tope ' + R0(tg.tope) + '</span></div>' +
+        '<p class="small muted" style="margin:0">Se paga en la factura del mes que viene.</p>' });
   }
 
-  if (esHoy) html += '<button class="link centro" data-accion="ver-todo-plan">' + (S.verTodoPlan ? 'Ocultar la lista completa ▴' : 'Ver la lista completa de pagos ▾') + '</button>';
-  if (!esHoy || S.verTodoPlan) html += '<section class="card"><div class="card-cab"><h2>Por pagar</h2><button class="link" data-accion="nuevo-item">＋ Agregar</button></div>' +
+  var lista = !V.porPagar.length ? '<p class="vacio">¡Todo pagado este mes! 🎉</p>' :
     '<div class="segmento" role="group" aria-label="Orden">' + [['prioridad', 'Prioridad'], ['monto', 'Monto'], ['grupo', 'Grupo']].map(function (o) {
-      return '<button data-orden="' + o[0] + '" aria-pressed="' + (S.planOrden === o[0]) + '">' + o[1] + '</button>';
-    }).join('') + '</div>';
-  if (esHoy && !S.verTodoPlan) {}
-  else if (!V.porPagar.length) html += '<p class="vacio">¡Todo pagado este mes! 🎉</p>';
-  else if (S.planOrden === 'grupo') {
-    html += agruparPagos(V.porPagar).map(function (g) {
+      return '<button data-orden="' + o[0] + '" aria-pressed="' + (S.planOrden === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+    (S.planOrden === 'grupo' ? agruparPagos(V.porPagar).map(function (g) {
       return '<div class="grupo-cab"><span>' + esc(g.grupo) + '</span><span class="num">' + R0(g.total) + '</span></div><div class="lista">' + g.items.map(filaPago).join('') + '</div>';
-    }).join('');
-  } else html += '<div class="lista">' + ordenarPagos(V.porPagar, S.planOrden).map(filaPago).join('') + '</div>';
-  if (!esHoy || S.verTodoPlan) html += '<div class="leyenda"><span><span class="prio urgente"></span> Urgente</span><span><span class="prio importante"></span> Importante</span><span><span class="prio normal"></span> Normal</span></div></section>';
+    }).join('') : '<div class="lista">' + ordenarPagos(V.porPagar, S.planOrden).map(filaPago).join('') + '</div>') +
+    '<div class="leyenda"><span><span class="prio urgente"></span> Urgente</span><span><span class="prio importante"></span> Importante</span><span><span class="prio normal"></span> Normal</span></div>';
+  html += modulo('lista', { titulo: esHoy ? 'Todos los pagos del mes' : 'Por pagar', total: R0(V.falta), sub: V.porPagar.length + ' pendientes', abierto: !esHoy,
+    agregar: botonAgregar({}), cuerpo: lista });
 
-  if (V.pagados.length) {
-    html += '<section class="card"><button class="pagados-cab" data-accion="ver-pagados" aria-expanded="' + !!S.verPagados + '"><span class="ok-ic">✓</span><h2>Pagados</h2>' +
-      '<span class="muted num">' + V.pagados.length + ' · ' + R0(V.pagado) + '</span><span class="flecha">' + (S.verPagados ? '▴' : '▾') + '</span></button>' +
-      (S.verPagados ? '<div class="lista">' + V.pagados.map(filaPagado).join('') + '</div>' : '') + '</section>';
-  }
+  html += modulo('pagados', { titulo: 'Pagados', clase: 'mod-pagados', total: R0(V.pagado), sub: V.pagados.length + ' pagos', agregar: botonAgregar({ pagado: true }),
+    cuerpo: V.pagados.length ? '<div class="lista">' + V.pagados.map(filaPagado).join('') + '</div>' : '<p class="small muted" style="margin:0">Cuando marques ✓ un pago, aparece aquí.</p>' });
 
-  if (D.activas.length) {
-    html += '<section class="card"><div class="card-cab"><h2>Deudas</h2><span class="small muted">Te faltan <b style="color:var(--ink)">' + R0(D.falta) + '</b></span></div>' +
-      '<div class="barra-mes"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div>' +
-      '<div class="barra-leg"><span>' + Math.round(D.pct * 100) + '% pagado</span><span>' + D.activas.length + ' activas · ' + D.terminadas.length + ' terminadas</span></div>' +
+  html += modulo('deudas', { titulo: 'Deudas', total: R0(D.falta), sub: D.activas.length ? Math.round(D.pct * 100) + '% pagado · ' + D.activas.length + ' activas' : 'Sin deudas activas',
+    agregar: botonAgregar({ tipo: 'cuotas', grupo: 'Plazos' }),
+    cuerpo: D.activas.length ? '<div class="barra-mes"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div>' +
       '<ul class="rank">' + D.activas.map(function (x) {
         return '<li class="tocable" data-accion="editar-item" data-id="' + esc(x.item.id) + '"><span class="nom">' + esc(x.item.nombre) + '</span><span class="num">' + R0(x.falta) + '</span>' +
           '<span class="pista"><i style="width:' + (x.hechas / x.total * 100).toFixed(1) + '%"></i></span><span class="det">' + x.hechas + ' de ' + x.total + ' cuotas · ' + R0(num(x.item.monto)) + ' c/u</span></li>';
-      }).join('') + '</ul></section>';
-  }
+      }).join('') + '</ul>' : '<p class="small muted" style="margin:0">No tienes deudas en cuotas. 🎉</p>' });
 
   var activos = S.suenos.filter(noCumplido);
-  html += '<section class="card"><div class="card-cab"><h2>Sueños</h2><button class="link" data-accion="nuevo-sueno">＋ Nuevo</button></div>' +
-    (activos.length ? '<ul class="rank">' + activos.map(function (s) {
-      var pr = num(s.precio) ? num(s.ahorrado) / num(s.precio) : 0;
-      return '<li><span class="nom tocable" data-accion="editar-sueno" data-id="' + esc(s.id) + '">' + esc((s.emoji ? s.emoji + ' ' : '') + s.nombre) + '</span>' +
-        '<button class="mini-btn" data-accion="ahorrar" data-id="' + esc(s.id) + '">＋ Ahorro</button>' +
-        '<span class="pista"><i style="width:' + (pr * 100).toFixed(1) + '%"></i></span><span class="det">' + R0(num(s.ahorrado)) + ' de ' + R0(num(s.precio)) +
-        ' · faltan ' + R0(Math.max(0, num(s.precio) - num(s.ahorrado))) + '</span></li>';
-    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>') + '</section>';
+  html += modulo('suenos', { titulo: 'Sueños', total: R0(suma(activos, function (x) { return num(x.ahorrado); })), sub: activos.length ? activos.length + ' en camino · ahorrado' : 'Agrega lo que quieres lograr',
+    agregar: botonAgregar(null, 'nuevo-sueno'),
+    cuerpo: activos.length ? '<ul class="rank">' + activos.map(function (x) {
+      var pr = num(x.precio) ? num(x.ahorrado) / num(x.precio) : 0;
+      return '<li><span class="nom tocable" data-accion="editar-sueno" data-id="' + esc(x.id) + '">' + esc((x.emoji ? x.emoji + ' ' : '') + x.nombre) + '</span>' +
+        '<button class="mini-btn" data-accion="ahorrar" data-id="' + esc(x.id) + '">＋ Ahorro</button>' +
+        '<span class="pista"><i style="width:' + (pr * 100).toFixed(1) + '%"></i></span><span class="det">' + R0(num(x.ahorrado)) + ' de ' + R0(num(x.precio)) +
+        ' · faltan ' + R0(Math.max(0, num(x.precio) - num(x.ahorrado))) + '</span></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>' });
 
-  html += '<section class="card"><div class="card-cab"><h2>Metas cumplidas</h2><span class="trofeo">🏆 ' + logros.length + '</span></div>' +
-    (logros.length ? '<ul class="logros">' + logros.map(function (l) {
+  html += modulo('metas', { titulo: 'Metas cumplidas', total: '🏆 ' + logros.length,
+    cuerpo: logros.length ? '<ul class="logros">' + logros.map(function (l) {
       return '<li><span class="ok-ic">✓</span><div><b>' + esc(l.titulo) + '</b><span class="small muted">' + esc(l.detalle) + (l.fecha ? ' · ' + fechaCorta(l.fecha) : '') + '</span></div></li>';
-    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>') + '</section>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>' });
 
-  html += '<section class="card"><h2>Mi año</h2><div class="tabla-wrap"><table><thead><tr><th>Mes</th><th>Entra</th><th>Pagar</th><th>Sobra</th></tr></thead><tbody>' +
+  html += modulo('anio', { titulo: 'Mi año', sub: 'Lo que entra, pagas y sobra cada mes',
+    cuerpo: '<div class="tabla-wrap"><table><thead><tr><th>Mes</th><th>Entra</th><th>Pagar</th><th>Sobra</th></tr></thead><tbody>' +
     miAnio(d, mesHoy, 12).map(function (f) {
       return '<tr><td>' + cap(nomMes(f.mes, true)) + '</td><td>' + R0(f.entra) + '</td><td>' + R0(f.pagar) + '</td><td style="color:' + (f.sobra >= 0 ? 'var(--good)' : 'var(--bad)') + '">' + R0(f.sobra) + '</td></tr>';
-    }).join('') + '</tbody></table></div></section>';
+    }).join('') + '</tbody></table></div>' });
   return html;
 }
 
 // ---------------------------------------------------------------- Reparto del sueldo
 var COL = { pagado: 'var(--muted)', ya: 'var(--bad)', espera: 'var(--warn)', vida: 'var(--cred)', gustos: '#c08bff', libre: 'var(--lima)' };
+// Módulo plegable: título, total y ＋ siempre a la vista; el contenido se abre con un toque y se recuerda
+function abiertosGuardados() { try { return JSON.parse(localStorage.getItem('misgastos.modulos') || '{}'); } catch (e) { return {}; } }
+function moduloAbierto(clave, porDefecto) {
+  var k = 'mod:' + clave;
+  if (S.abiertos && S.abiertos[k] != null) return S.abiertos[k];
+  var g = abiertosGuardados(); return g[k] != null ? g[k] : porDefecto;
+}
+function botonAgregar(base, accion) {
+  return '<button class="mod-add" data-accion="' + (accion || 'nuevo-item-base') + '"' + (base ? " data-base='" + esc(JSON.stringify(base)) + "'" : '') + ' aria-label="Agregar">＋</button>';
+}
+function modulo(clave, o) {
+  var ab = moduloAbierto(clave, !!o.abierto);
+  return '<section class="card mod ' + (o.clase || '') + (ab ? ' abierto' : '') + '"><div class="mod-cab">' +
+    '<button class="mod-tog" data-plegar="mod:' + clave + '" aria-expanded="' + ab + '"><span class="mod-tit"><h2>' + o.titulo + '</h2>' + (o.sub ? '<span class="pleg-sub">' + o.sub + '</span>' : '') + '</span>' +
+    (o.total != null ? '<span class="mod-tot num">' + o.total + '</span>' : '') + '<span class="pleg-fl">' + (ab ? '▴' : '▾') + '</span></button>' +
+    (o.agregar || '') + '</div>' + (ab ? '<div class="mod-cuerpo">' + o.cuerpo + '</div>' : '') + '</section>';
+}
+
+var COL_SUENO = '#c08bff';
 function bloqueReparto() {
   var r = repartoSueldo(datosPlan(), hoy);
   if (!r.ingreso) return '<section class="card"><h2>¿Cuánto te entra este mes?</h2><button class="btn prim" data-accion="editar-ingreso">Escribir mi ingreso</button></section>';
-  var seg = [['pagado', 'Ya pagado', r.pagado], ['ya', 'Pagar ya', r.pagarYa], ['espera', 'Puede esperar', r.puedeEsperar],
+  var seg = [['pagado', 'Ya pagado', r.pagado + r.gustosHechos], ['ya', 'Pagar ya', r.pagarYa], ['espera', 'Puede esperar', r.puedeEsperar],
     ['vida', 'Día a día', r.vida + r.colchon], ['gustos', 'Gustos', r.totalGustos], ['libre', 'Libre', r.libre]].filter(function (x) { return x[2] > 0; });
-  var tot = Math.max(r.ingreso, suma(seg, function (x) { return x[2]; }));
   var h = '<section class="card reparto">' +
     '<div class="card-cab"><span class="eyebrow">' + (r.cobrado ? 'Te queda' : 'Te quedará al cobrar') + '</span>' +
       (r.extra > 0 ? '<span class="pill bien">+' + R0(r.extra) + ' de lo esperado 🎉</span>' : !r.cobrado ? '<button class="link" data-accion="editar-ingreso">Editar</button>' : '') + '</div>' +
@@ -2011,45 +2032,49 @@ function bloqueReparto() {
       return '<span><b style="background:' + COL[x[0]] + '"></b>' + x[1] + '<em class="num">' + R0(x[2]) + '</em></span>'; }).join('') + '</div>' +
     (r.falta ? '<div class="rep-alerta">No alcanza: faltan <b>' + R0(r.falta) + '</b>. Pasa algo de «Puede esperar» al mes que viene.</div>' : '') +
     '</section>';
-  // 1. Pagar ya (lo más importante, en rojo)
-  h += '<button class="btn prim ancho" data-accion="nuevo-item">＋ Agregar un pago</button>';
-  if (r.ya.length) h += '<section class="card rep-ya"><div class="card-cab"><h2>Pagar ya</h2><span class="num rep-tot">' + R0(r.pagarYa) + '</span></div>' +
-    '<p class="small" style="margin:0;color:var(--ink-2)">Atrasado, urgente o vence en 7 días. Marca ✓ al pagar.</p><div class="lista">' + r.ya.map(filaPago).join('') + '</div></section>';
-  else h += '<section class="card rep-ok"><h2>✓ Nada urgente por pagar</h2></section>';
-  // 2. Gustos del mes
+
+  // Pagar ya: lo más importante (rojo, abierto)
+  h += modulo('ya', { titulo: 'Pagar ya', clase: r.ya.length ? 'rep-ya' : 'rep-ok', abierto: true, total: r.ya.length ? R0(r.pagarYa) : '✓',
+    sub: r.ya.length ? 'Atrasado, urgente o vence en 7 días' : 'Nada urgente', agregar: botonAgregar({ prioridad: 'urgente' }),
+    cuerpo: r.ya.length ? '<div class="lista">' + r.ya.map(filaPago).join('') + '</div>' : '<p class="small muted" style="margin:0">Todo lo urgente está pagado.</p>' });
+
+  // Gustos del mes
   var est = { alcanza: ['bien', '✓ Alcanza'], parcial: ['atento', '⚠ Solo alcanza '], no: ['riesgo', '✗ No alcanza'], hecho: ['neutro', '✓ Comprado'] };
-  h += '<section class="card rep-gustos"><div class="card-cab"><h2>Gustos del mes</h2><span class="num rep-tot">' + R0(r.totalGustos) + '</span></div>' +
-    (r.gustos.length ? '<div class="lista">' + r.gustos.map(function (g) {
+  var resumenG = r.gustos.length ? r.gustos.filter(function (g) { return g.estado === 'alcanza' || g.estado === 'hecho'; }).length + ' de ' + r.gustos.length + ' alcanzan' : 'Casa, ropa, vacaciones…';
+  h += modulo('gustos', { titulo: 'Gustos del mes', clase: 'rep-gustos', abierto: true, total: R0(r.totalGustos), sub: resumenG,
+    agregar: botonAgregar({ grupo: 'Gustos', tipo: 'unico' }),
+    cuerpo: (r.gustos.length ? '<div class="lista">' + r.gustos.map(function (g) {
       var e = est[g.estado];
       return '<div class="gusto" data-accion="editar-item" data-id="' + esc(g.item.id) + '" role="button" tabindex="0"><span class="nom">' + esc(g.item.nombre) + '</span>' +
         '<span class="num">' + R0(g.monto) + '</span><span class="pill ' + e[0] + '">' + e[1] + (g.estado === 'parcial' ? R0(g.alcanza) : '') + '</span></div>';
     }).join('') + '</div>' : '<p class="small muted" style="margin:0">¿Quieres comprar algo este mes? Agrégalo y te digo si alcanza.</p>') +
     '<div class="chips">' + [['🏠', 'Casa'], ['🏖️', 'Vacaciones'], ['👕', 'Ropa'], ['✨', 'Otro']].map(function (c) {
-      return '<button class="chip" data-accion="nuevo-gusto" data-nombre="' + c[1] + '">' + c[0] + ' ' + c[1] + '</button>'; }).join('') + '</div></section>';
-  // 3. Día a día
+      return '<button class="chip" data-accion="nuevo-gusto" data-nombre="' + c[1] + '">' + c[0] + ' ' + c[1] + '</button>'; }).join('') + '</div>' });
+
+  // Día a día
   var vg = r.vidaGastado, vpct = r.vida ? Math.min(1, vg / r.vida) : 0, pasado = r.vida && vg > r.vida;
-  h += '<section class="card rep-vida"><div class="card-cab"><h2>Día a día</h2><span class="num rep-tot">' + R0(r.vida) + '</span></div>' +
-    '<p class="small" style="margin:0;color:var(--ink-2)">Lo que sueles gastar al mes con débito y Pix: comida, transporte, gastos chicos.' + (r.colchon ? ' Más ' + R0(r.colchon) + ' de colchón.' : '') + '</p>' +
-    '<div class="barra-mes"><i style="width:' + (vpct * 100).toFixed(1) + '%;background:' + (pasado ? 'var(--bad)' : 'var(--cred)') + '"></i></div>' +
-    '<div class="barra-leg"><span>Llevas ' + R0(vg) + '</span><span>' + (pasado ? '<b style="color:var(--bad)">Pasaste ' + R0(vg - r.vida) + '</b>' : 'Te quedan ' + R0(Math.max(0, r.vida - vg))) + '</span></div>' +
-    (r.vidaCats.length ? '<ul class="rank">' + r.vidaCats.slice(0, 6).map(function (c) {
-      var p = c.estimado ? Math.min(1, c.gastado / c.estimado) : 0;
-      return '<li><span class="nom">' + esc(c.nombre) + '</span><span class="num">' + R0(c.gastado) + ' <span class="muted small">de ' + R0(c.estimado) + '</span></span>' +
-        '<span class="pista"><i style="width:' + (p * 100).toFixed(1) + '%;background:' + (c.gastado > c.estimado ? 'var(--bad)' : 'var(--cred)') + '"></i></span></li>';
-    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Todavía no hay meses anteriores para estimarlo.</p>') +
-    (r.vidaMovs.length ? '<button class="pleg-cab" data-accion="ver-vida" aria-expanded="' + !!S.verVida + '"><span class="pleg-tit">Compras de este mes<span class="pleg-sub">' + r.vidaMovs.length + ' movimientos</span></span><span class="num pleg-tot">' + R0(vg) + '</span><span class="pleg-fl">' + (S.verVida ? '▴' : '▾') + '</span></button>' +
-      (S.verVida ? '<div class="lista">' + r.vidaMovs.slice(0, 60).map(filaMov).join('') + '</div>' : '') : '') +
-    '</section>';
-  // 4. Lo que sobra
-  if (r.libre > 0) h += '<section class="card rep-libre"><div class="card-cab"><h2>Te sobran</h2><span class="hoy-monto num" style="font-size:30px">' + R0(r.libre) + '</span></div>' +
-    '<p class="small" style="margin:0;color:var(--ink-2)">Sepáralos apenas cobres, antes de gastarlos:</p>' +
-    r.reparto.map(function (x) {
-      return '<div class="rep-dest"><span class="nom">' + esc(x.nombre) + '</span><span class="num">' + R0(x.monto) + '</span><span class="pista"><i style="width:' + (x.pct * 100) + '%"></i></span></div>'; }).join('') +
-    '</section>';
-  // 5. Puede esperar (menos importante: plegado)
-  if (r.espera.length) h += '<section class="card rep-espera"><button class="pleg-cab" data-accion="ver-espera" aria-expanded="' + !!S.verEspera + '"><span class="pleg-tit">Puede esperar<span class="pleg-sub">' +
-    r.espera.length + ' pagos más adelante en el mes</span></span><span class="num pleg-tot">' + R0(r.puedeEsperar) + '</span><span class="pleg-fl">' + (S.verEspera ? '▴' : '▾') + '</span></button>' +
-    (S.verEspera ? '<div class="lista">' + r.espera.map(filaPago).join('') + '</div>' : '') + '</section>';
+  h += modulo('vida', { titulo: 'Día a día', clase: 'rep-vida', total: R0(r.vida), sub: pasado ? '<span class="rojo">Pasaste ' + R0(vg - r.vida) + '</span>' : 'Llevas ' + R0(vg) + ' · te quedan ' + R0(Math.max(0, r.vida - vg)),
+    agregar: botonAgregar(null, 'agregar'),
+    cuerpo: '<p class="small" style="margin:0;color:var(--ink-2)">Lo que sueles gastar al mes con débito y Pix: comida, transporte, gastos chicos.' + (r.colchon ? ' Más ' + R0(r.colchon) + ' de colchón.' : '') + '</p>' +
+      '<div class="barra-mes"><i style="width:' + (vpct * 100).toFixed(1) + '%;background:' + (pasado ? 'var(--bad)' : 'var(--cred)') + '"></i></div>' +
+      (r.vidaCats.length ? '<ul class="rank">' + r.vidaCats.slice(0, 6).map(function (c) {
+        var p = c.estimado ? Math.min(1, c.gastado / c.estimado) : 0;
+        return '<li><span class="nom">' + esc(c.nombre) + '</span><span class="num">' + R0(c.gastado) + ' <span class="muted small">de ' + R0(c.estimado) + '</span></span>' +
+          '<span class="pista"><i style="width:' + (p * 100).toFixed(1) + '%;background:' + (c.gastado > c.estimado ? 'var(--bad)' : 'var(--cred)') + '"></i></span></li>';
+      }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Todavía no hay meses anteriores para estimarlo.</p>') +
+      (r.vidaMovs.length ? '<button class="pleg-cab" data-accion="ver-vida" aria-expanded="' + !!S.verVida + '"><span class="pleg-tit">Compras de este mes<span class="pleg-sub">' + r.vidaMovs.length + ' movimientos</span></span><span class="num pleg-tot">' + R0(vg) + '</span><span class="pleg-fl">' + (S.verVida ? '▴' : '▾') + '</span></button>' +
+        (S.verVida ? '<div class="lista">' + r.vidaMovs.slice(0, 60).map(filaMov).join('') + '</div>' : '') : '') });
+
+  // Te sobran
+  if (r.libre > 0) h += modulo('libre', { titulo: 'Te sobran', clase: 'rep-libre', abierto: true, total: R0(r.libre), sub: 'Sepáralos apenas cobres',
+    agregar: botonAgregar(null, 'nuevo-sueno'),
+    cuerpo: r.reparto.map(function (x) {
+      return '<div class="rep-dest"><span class="nom">' + esc(x.nombre) + '</span><span class="num">' + R0(x.monto) + '</span><span class="pista"><i style="width:' + (x.pct * 100) + '%"></i></span></div>'; }).join('') });
+
+  // Puede esperar (menos importante)
+  h += modulo('espera', { titulo: 'Puede esperar', clase: 'rep-espera', total: R0(r.puedeEsperar), sub: r.espera.length ? r.espera.length + ' pagos más adelante' : 'Nada pendiente',
+    agregar: botonAgregar({ prioridad: 'normal' }),
+    cuerpo: r.espera.length ? '<div class="lista">' + r.espera.map(filaPago).join('') + '</div>' : '<p class="small muted" style="margin:0">No hay pagos para más adelante.</p>' });
   return h;
 }
 
@@ -2120,6 +2145,7 @@ function pagar(t) {
 
 function abrirItem(id, base) {
   var it = S.plan.filter(function (x) { return x.id === id; })[0] || Object.assign({ tipo: 'unico', prioridad: 'normal', grupo: '', mes_inicio: S.mesPlan || mesDe(hoy) }, base || {});
+  delete it.pagado;
   var grupos = GRUPOS_BASE.concat(S.plan.map(function (x) { return x.grupo; })).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
   $('#dlg-form').innerHTML = '<h2>' + (id ? 'Editar pago' : 'Nuevo pago') + '</h2>' +
     '<label class="campo">Nombre<input id="it-nombre" value="' + esc(it.nombre || '') + '" placeholder="Alquiler, Pix a un amigo…"></label>' +
@@ -2138,7 +2164,7 @@ function abrirItem(id, base) {
       '<label class="campo">Vence el día<input id="it-vence" inputmode="numeric" placeholder="Ej: 10" value="' + esc(it.vence_dia || '') + '"></label></div>' +
     '<span class="ayuda">Con el día de vencimiento te aviso por email 2 días antes y el mismo día.</span>' +
     '<label class="campo">Nota<input id="it-nota" value="' + esc(it.nota || '') + '" placeholder="Opcional"></label>' +
-    (id ? '' : '<label class="casilla"><input type="checkbox" id="it-pagado"> Ya lo pagué (descontarlo ahora)</label>') +
+    (id ? '' : '<label class="casilla"><input type="checkbox" id="it-pagado"' + (base && base.pagado ? ' checked' : '') + '> Ya lo pagué (descontarlo ahora)</label>') +
     '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-item" data-id="' + esc(id || '') + '">Guardar</button><button class="btn" value="cancel">Cerrar</button>' +
     (id ? '<button class="btn peligro" type="button" data-accion="borrar-item" data-id="' + esc(id) + '">Borrar</button>' : '') + '</div>';
   $('#dlg').showModal();
@@ -2293,7 +2319,11 @@ document.addEventListener('click', function (e) {
   else if (t.dataset.orden) { S.planOrden = t.dataset.orden; render(); }
   else if (t.dataset.metodo != null) { S.metodoFiltro = t.dataset.metodo; render(); }
   else if (t.dataset.movvista) { S.movVista = t.dataset.movvista; S.movRef = hoy; render(); }
-  else if (t.dataset.plegar) { S.abiertos = S.abiertos || {}; S.abiertos[t.dataset.plegar] = t.getAttribute('aria-expanded') !== 'true'; render(); }
+  else if (t.dataset.plegar) {
+    S.abiertos = S.abiertos || {}; var k = t.dataset.plegar, v = t.getAttribute('aria-expanded') !== 'true'; S.abiertos[k] = v;
+    if (/^mod:/.test(k)) { var g = abiertosGuardados(); g[k] = v; try { localStorage.setItem('misgastos.modulos', JSON.stringify(g)); } catch (e) { /* se recuerda solo en esta sesión */ } }
+    render();
+  }
   else ({
     agregar: abrirAgregar, importar: function () { $('#archivo').click(); },
     'guardar-mov': function () { guardarMov(t.dataset.id); }, 'borrar-mov': function () { borrarMov(t.dataset.id); },
@@ -2311,6 +2341,7 @@ document.addEventListener('click', function (e) {
       var met = $('#ag-met'); if (met && met.value === 'pix') met.value = 'debito';
       $('#ag-monto').focus();
     },
+    'nuevo-item-base': function () { var b = {}; try { b = JSON.parse(t.dataset.base || '{}'); } catch (e) { b = {}; } abrirItem(null, b); },
     'ver-espera': function () { S.verEspera = !S.verEspera; render(); }, 'ver-vida': function () { S.verVida = !S.verVida; render(); }, 'ver-todo-plan': function () { S.verTodoPlan = !S.verTodoPlan; render(); },
     'nuevo-gusto': function () { abrirItem(null, { grupo: 'Gustos', tipo: 'unico', prioridad: 'normal', nombre: t.dataset.nombre === 'Otro' ? '' : t.dataset.nombre }); }, 'ver-consejos': function () { S.verConsejos = !S.verConsejos; render(); },
     'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
