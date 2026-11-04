@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793800348368";</script>
+<script>window.APP_VERSION="1793801219552";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -234,6 +234,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .rep-ley b { width: 12px; height: 12px; border-radius: 4px; }
 .rep-ley em { font-style: normal; font-weight: 700; color: var(--ink); }
 .btn.ancho { width: 100%; }
+.rep-fuente { background: none; border: 0; padding: 0; color: var(--muted); font-size: 12px; text-align: left; margin-top: -6px; }
+.rep-fuente u { color: var(--lima); text-decoration: none; font-weight: 700; }
 .rep-recibido { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: -4px; }
 .rep-recibido b { color: var(--ink-2); }
 .rep-alerta { background: var(--bad-bg); color: var(--bad); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
@@ -355,6 +357,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .lado-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .lado-total { font-family: var(--f-display); font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
 .lado-ayuda { margin: -8px 0 0; font-size: 13px; color: var(--muted); }
+button.fila-banco { background: none; border: 0; padding: 0; width: 100%; text-align: left; color: var(--ink); }
 .fila-banco, .fila-deuda { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .fila-deuda { grid-template-columns: minmax(0, 1fr) auto; padding-top: 10px; border-top: 1px solid var(--line); }
 .fb-nom { font-weight: 700; display: grid; min-width: 0; }
@@ -876,7 +879,9 @@ function gastoDiario(d, hoy) {
   var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000; });
   var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
   // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
-  var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0; }), function (m) { return -m.monto; }));
+  // …salvo que después corregiste a mano el saldo de esa cuenta (el saldo nuevo ya lo incluye)
+  var corregida = function (m) { return (d.cuentas || []).some(function (c) { return c.manual && c.banco === m.cuenta && String(c.actualizado) >= String(m.creado || m.fecha); }); };
+  var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0 && !corregida(m); }), function (m) { return -m.monto; }));
   var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); }) + pendiente) : null;
   var esperando = !!V.entra && !cobro.length;
   var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
@@ -1231,12 +1236,40 @@ document.addEventListener('click', function (e) {
 // Copia de los últimos datos en el teléfono: la app abre al instante con ella y se actualiza en segundo plano
 function guardarCache(d) { try { localStorage.setItem('misgastos.cache', JSON.stringify(d)); } catch (e) { /* sin espacio o bloqueado: se carga siempre del servidor */ } }
 function leerCache() { try { return JSON.parse(localStorage.getItem('misgastos.cache') || 'null'); } catch (e) { return null; } }
+function aplicarSaldosManuales(cuentas, cfg) {
+  return cuentas.map(function (c) {
+    if (c.tipo === 'tarjeta') return c;
+    var m = String(cfg['saldo_' + c.banco] || '').split('|');
+    if (m.length < 2 || isNaN(Number(m[0]))) return c;
+    if (c.actualizado && String(c.actualizado) > m[1]) return c; // el banco ya informó algo más nuevo
+    return Object.assign({}, c, { saldo: Number(m[0]), actualizado: m[1], manual: true });
+  });
+}
+function abrirSaldo(banco) {
+  var c = S.cuentas.filter(function (x) { return x.banco === banco && x.tipo !== 'tarjeta'; })[0] || {};
+  $('#dlg-form').innerHTML = '<h2>Saldo de ' + esc(banco) + ' hoy</h2>' +
+    '<p class="small muted" style="margin:0">El banco informa por Open Finance con hasta 1 día de retraso. Escribe lo que ves ahora en la app de ' + esc(banco) + ' y la app lo usa hasta que llegue un dato más nuevo.</p>' +
+    '<label class="campo">Saldo (R$)<input id="sd-monto" inputmode="decimal" value="' + esc(String(num(c.saldo)).replace('.', ',')) + '"></label>' +
+    '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-saldo" data-banco="' + esc(banco) + '">Guardar</button><button class="btn" type="button" data-accion="cerrar-dlg">Cancelar</button></div>';
+  $('#dlg').showModal();
+}
+function guardarSaldo(banco) {
+  var v = $('#sd-monto').value.trim(), n = /,/.test(v) ? num(v.replace(/\./g, '')) : num(v);
+  if (isNaN(n)) { aviso('Escribe el saldo'); return; }
+  var ahora = new Date(), f = ahora.getFullYear() + '-' + ('0' + (ahora.getMonth() + 1)).slice(-2) + '-' + ('0' + ahora.getDate()).slice(-2) + 'T' + ahora.toTimeString().slice(0, 8);
+  var cambio = {}; cambio['saldo_' + banco] = n + '|' + f;
+  cerrarDlg();
+  S.cfg['saldo_' + banco] = cambio['saldo_' + banco];
+  S.cuentas = aplicarSaldosManuales(S.cuentas, S.cfg); render(); aviso('Saldo de ' + banco + ': ' + R(n));
+  if (!S.demo) llamar('api_guardarConfig', cambio).catch(function (e) { aviso('No se guardó: ' + e.message); });
+}
+
 function recibir(d, deCache) {
   if (!deCache) { ultimaCarga = Date.now(); guardarCache(d); }
   S.movs = d.movimientos.sort(function (a, b) { return (b.fecha + b.hora).localeCompare(a.fecha + a.hora); });
   S.cfg = d.config || {}; S.categorias = d.categorias || CATS_DEFECTO; S.demo = false;
   S.plan = d.plan || []; S.pagos = d.pagos || []; S.suenos = d.suenos || [];
-  S.cuentas = d.cuentas || []; S.bancos = d.bancos || {};
+  S.cuentas = aplicarSaldosManuales(d.cuentas || [], S.cfg); S.bancos = d.bancos || {};
   if (!S.mesPlan) { var ini = S.plan.map(function (x) { return x.mes_inicio; }).filter(Boolean).sort()[0]; if (ini && ini > mesDe(hoy)) S.mesPlan = ini; }
   $('#estado').textContent = deCache ? 'Actualizando…' : S.movs.length + ' movimientos';
   render();
@@ -1389,7 +1422,8 @@ function filaPorPagar() {
     var seg = [['pagado', r.pagado], ['ya', r.pagarYa], ['espera', r.puedeEsperar], ['vida', r.vida + r.colchon], ['gustos', r.totalGustos], ['libre', r.libre]].filter(function (x) { return x[1] > 0; });
     return '<button class="card cta rep-mini" data-ir="mimes"><span style="display:grid;gap:8px;min-width:0;width:100%">' +
       '<span class="card-cab"><span class="eyebrow">Te queda de tu sueldo</span><span class="flecha-der">›</span></span>' +
-      '<span class="v-grande num' + (r.queda < 0 ? ' rojo' : '') + '">' + R0(r.queda) + ' <small class="small muted" style="font-weight:500">de ' + R0(r.ingreso) + '</small></span>' +
+      (function () { var g = gastoDiario(datosPlan(), hoy), q = r.cobrado && g.enCuentas !== null ? g.enCuentas : r.queda;
+        return '<span class="v-grande num' + (q < 0 ? ' rojo' : '') + '">' + R0(q) + ' <small class="small muted" style="font-weight:500">de ' + R0(r.ingreso) + '</small></span>'; })() +
       '<span class="rep-barra">' + seg.map(function (x) { return '<i style="flex:' + x[1] + ';background:' + COL[x[0]] + '"></i>'; }).join('') + '</span>' +
       '<span class="rep-mini-fila">' + (r.pagarYa ? '<span><b style="color:var(--bad)">' + R0(r.pagarYa) + '</b> pagar ya</span>' : '<span>✓ nada urgente</span>') +
       (r.falta ? '<span><b style="color:var(--bad)">faltan ' + R0(r.falta) + '</b></span>' : '<span><b style="color:var(--lima)">' + R0(r.libre) + '</b> libres</span>') + '</span></span></button>';
@@ -1859,8 +1893,9 @@ function bloqueTengoDebo() {
 
   var filasTengo = cuentas.map(function (c) {
     var neg = num(c.saldo) < 0;
-    return '<div class="fila-banco">' + logoBanco(c.banco) + '<span class="fb-nom">' + esc(nombreCorto(c)) + (neg ? '<span class="fb-sub rojo">En negativo · cheque especial</span>' : '') + '</span>' +
-      '<span class="fb-monto' + (neg ? ' rojo' : '') + '">' + R(num(c.saldo)) + '</span></div>';
+    return '<button class="fila-banco tocable" data-accion="ajustar-saldo" data-banco="' + esc(c.banco) + '">' + logoBanco(c.banco) + '<span class="fb-nom">' + esc(nombreCorto(c)) +
+      '<span class="fb-sub' + (neg ? ' rojo' : '') + '">' + (neg ? 'En negativo · cheque especial' : (c.manual ? 'Corregido por ti · ' : 'Banco · ') + (haceCuanto(c.actualizado) || '') + ' · tocar para corregir') + '</span></span>' +
+      '<span class="fb-monto' + (neg ? ' rojo' : '') + '">' + R(num(c.saldo)) + '</span></button>';
   }).join('');
 
   var filasTarj = tarjetas.map(function (c) {
@@ -2052,7 +2087,13 @@ function bloqueReparto() {
   var h = '<section class="card reparto">' +
     '<div class="card-cab"><span class="eyebrow">' + (r.cobrado ? 'Te queda' : 'Te quedará al cobrar') + '</span>' +
       (r.extra > 0 ? '<span class="pill bien">+' + R0(r.extra) + ' de lo esperado 🎉</span>' : !r.cobrado ? '<button class="link" data-accion="editar-ingreso">Editar</button>' : '') + '</div>' +
-    '<div class="hoy-monto num' + (r.queda < 0 ? ' rojo' : '') + '">' + R0(r.queda) + '</div>' +
+    (function () {
+      var g = gastoDiario(datosPlan(), hoy), real = r.cobrado && g.enCuentas !== null;
+      var cs = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
+      var fecha = cs.map(function (c) { return String(c.actualizado || ''); }).sort().pop();
+      return '<div class="hoy-monto num' + ((real ? g.enCuentas : r.queda) < 0 ? ' rojo' : '') + '">' + R0(real ? g.enCuentas : r.queda) + '</div>' +
+        (real ? '<button class="rep-fuente" data-accion="ver-detalle-saldo">En tus cuentas · ' + (haceCuanto(fecha) || 'sin fecha') + ' · <u>corregir</u></button>' : '');
+    })() +
     '<div class="rep-recibido"><span>' + (r.cobrado ? 'Recibiste' : 'Esperas') + ' <b class="num">' + R0(r.ingreso) + '</b></span>' +
       (r.pagado + r.gustosHechos ? '<span>Ya pagaste <b class="num">' + R0(r.pagado + r.gustosHechos) + '</b></span>' : '<span>Todavía no marcaste pagos</span>') + '</div>' +
     '<div class="rep-barra">' + seg.map(function (x) { return '<i style="flex:' + x[2] + ';background:' + COL[x[0]] + '"></i>'; }).join('') + '</div>' +
@@ -2401,6 +2442,15 @@ document.addEventListener('click', function (e) {
     },
     'nuevo-item-base': function () { var b = {}; try { b = JSON.parse(t.dataset.base || '{}'); } catch (e) { b = {}; } abrirItem(null, b); },
     'cerrar-dlg': cerrarDlg,
+    'ver-detalle-saldo': function () {
+      var cs = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
+      if (cs.length === 1) { abrirSaldo(cs[0].banco); return; }
+      $('#dlg-form').innerHTML = '<h2>¿Qué cuenta corriges?</h2><div class="lista">' + cs.map(function (c) {
+        return '<button class="fila-banco tocable" type="button" data-accion="ajustar-saldo" data-banco="' + esc(c.banco) + '">' + logoBanco(c.banco) + '<span class="fb-nom">' + esc(nombreCorto(c)) + '</span><span class="fb-monto">' + R(num(c.saldo)) + '</span></button>'; }).join('') +
+        '</div><button class="btn" type="button" data-accion="cerrar-dlg">Cancelar</button>';
+      $('#dlg').showModal();
+    },
+    'ajustar-saldo': function () { abrirSaldo(t.dataset.banco); }, 'guardar-saldo': function () { guardarSaldo(t.dataset.banco); },
     'ver-espera': function () { S.verEspera = !S.verEspera; render(); }, 'ver-vida': function () { S.verVida = !S.verVida; render(); }, 'ver-todo-plan': function () { S.verTodoPlan = !S.verTodoPlan; render(); },
     'nuevo-gusto': function () { abrirItem(null, { grupo: 'Gustos', tipo: 'unico', prioridad: 'normal', nombre: t.dataset.nombre === 'Otro' ? '' : t.dataset.nombre }); }, 'ver-consejos': function () { S.verConsejos = !S.verConsejos; render(); },
     'mov-ant': function () { moverMov(-1); }, 'mov-sig': function () { moverMov(1); },
