@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793893545319";</script>
+<script>window.APP_VERSION="1793908423953";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -871,6 +871,27 @@ function ingresoYaDelBanco(m, movs) {
   });
 }
 
+/**
+ * Pagos del plan marcados hace ≤ 1 día que el banco todavía no informa: un movimiento del banco con el mismo monto (±1%)
+ * y ±3 días lo cubre. No cuentan los pagados con tarjeta de crédito (no salen de la cuenta) ni los anteriores
+ * a una corrección manual del saldo.
+ */
+function pagosSinBanco(d, hoy, corregidaDesde) {
+  var ayer = new Date(Date.parse(hoy + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10), movs = d.movs || [];
+  var items = {}; (d.plan || []).forEach(function (it) { items[it.id] = it; });
+  return (d.pagos || []).filter(function (p) {
+    var f = String(p.fecha).slice(0, 10), it = items[p.item] || {}, monto = num(p.monto);
+    if (!(monto > 0) || f < ayer || f > hoy) return false;
+    if (/cr[eé]dito|tarjeta/i.test(it.cuenta || '') && it.tipo !== 'tarjeta') return false;
+    if (corregidaDesde(/T/.test(String(p.creado)) ? String(p.creado) : f)) return false;
+    return !movs.some(function (m) {
+      if (/^manual$/i.test(m.origen || '') || !(m.monto > 0)) return false;
+      var dias = Math.abs((Date.parse(m.fecha + 'T12:00:00Z') - Date.parse(f + 'T12:00:00Z')) / 86400000);
+      return dias <= 3 && Math.abs(m.monto - monto) <= Math.max(1, monto * 0.01);
+    });
+  });
+}
+
 // Lo que pagas por plan (alquiler, cuentas, impuestos, cuotas, personas): no cuenta como gasto del día a día
 var PLANEADAS = ['Alquiler', 'Impuestos y contador', 'Préstamos e intereses', 'Personas (Pix)', 'Casa y servicios'];
 /**
@@ -891,12 +912,17 @@ function gastoDiario(d, hoy) {
   // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
   // …salvo que después corregiste a mano el saldo de esa cuenta (el saldo nuevo ya lo incluye)
   // (cualquier cuenta: el ingreso puede haberse registrado con otra cuenta elegida por defecto)
-  var corregida = function (m) { return (d.cuentas || []).some(function (c) { return c.manual && String(c.actualizado) >= (/^\d{4}-\d{2}-\d{2}/.test(String(m.creado)) ? String(m.creado) : m.fecha); }); };
+  var corregidaDesde = function (t) { return (d.cuentas || []).some(function (c) { return c.manual && String(c.actualizado) >= t; }); };
+  var corregida = function (m) { return corregidaDesde(/^\d{4}-\d{2}-\d{2}/.test(String(m.creado)) ? String(m.creado) : m.fecha); };
   var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0 && !corregida(m) && !ingresoYaDelBanco(m, movs); }), function (m) { return -m.monto; }));
+  // Pagos que marcaste hoy o ayer y el banco todavía no informa (Open Finance llega con hasta 1 día de retraso):
+  // los restamos ya. Se dejan de restar cuando aparece el movimiento del banco, cuando corriges el saldo o a los 2 días.
+  var pagadoSinBanco = redondear(suma(pagosSinBanco(d, hoy, corregidaDesde), function (p) { return num(p.monto); }));
+  pendiente = redondear(pendiente - pagadoSinBanco);
   var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); }) + pendiente) : null;
   var esperando = !!V.entra && !cobro.length;
   var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
-    sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false, pendienteBanco: pendiente };
+    sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false, pendienteBanco: pendiente, pagadoSinBanco: pagadoSinBanco };
   if (!esperando && enCuentas !== null) {
     var real = redondear(enCuentas - V.falta);
     if (real < r.disponible) { r.disponible = real; r.porDia = redondear(real / dias); r.limitadoPorCuentas = true; }
@@ -1263,6 +1289,10 @@ function abrirSaldo(banco) {
     '<label class="campo">Saldo (R$)<input id="sd-monto" inputmode="decimal" value="' + esc(String(num(c.saldo)).replace('.', ',')) + '"></label>' +
     '<div class="acciones"><button class="btn prim" type="button" data-accion="guardar-saldo" data-banco="' + esc(banco) + '">Guardar</button><button class="btn" type="button" data-accion="cerrar-dlg">Cancelar</button></div>';
   $('#dlg').showModal();
+}
+function ahoraIso() {
+  var a = new Date();
+  return a.getFullYear() + '-' + ('0' + (a.getMonth() + 1)).slice(-2) + '-' + ('0' + a.getDate()).slice(-2) + 'T' + a.toTimeString().slice(0, 8);
 }
 function guardarSaldo(banco) {
   var v = $('#sd-monto').value.trim(), n = /,/.test(v) ? num(v.replace(/\./g, '')) : num(v);
@@ -2103,7 +2133,8 @@ function bloqueReparto() {
       var cs = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
       var fecha = cs.map(function (c) { return String(c.actualizado || ''); }).sort().pop();
       return '<div class="hoy-monto num' + ((real ? g.enCuentas : r.queda) < 0 ? ' rojo' : '') + '">' + R0(real ? g.enCuentas : r.queda) + '</div>' +
-        (real ? '<button class="rep-fuente" data-accion="ver-detalle-saldo">En tus cuentas · ' + (haceCuanto(fecha) || 'sin fecha') + ' · <u>corregir</u></button>' : '');
+        (real ? '<button class="rep-fuente" data-accion="ver-detalle-saldo">En tus cuentas · ' + (haceCuanto(fecha) || 'sin fecha') + ' · <u>corregir</u></button>' : '') +
+        (real && g.pagadoSinBanco > 0 ? '<div class="rep-fuente">Ya descuenta ' + R0(g.pagadoSinBanco) + ' que pagaste y el banco aún no informa</div>' : '');
     })() +
     '<div class="rep-recibido"><span>' + (r.cobrado ? 'Recibiste' : 'Esperas') + ' <b class="num">' + R0(r.ingreso) + '</b></span>' +
       (r.pagado + r.gustosHechos ? '<span>Ya pagaste <b class="num">' + R0(r.pagado + r.gustosHechos) + '</b></span>' : '<span>Todavía no marcaste pagos</span>') + '</div>' +
@@ -2217,7 +2248,7 @@ function pagar(t) {
   t.classList.add('on');
   if (fila) fila.classList.add('saliendo');
   setTimeout(function () {
-    guardarEn('Pagos', { id: idNuevo(), item: it.id, mes: t.dataset.mes, monto: num(t.dataset.monto), fecha: hoy, cuota: t.dataset.n });
+    guardarEn('Pagos', { id: idNuevo(), item: it.id, mes: t.dataset.mes, monto: num(t.dataset.monto), fecha: hoy, cuota: t.dataset.n, creado: ahoraIso() });
     if (resumenDeudas(datosPlan()).terminadas.length > antes) { confeti(); aviso('¡Deuda terminada: ' + it.nombre + '! 🎉'); }
     else aviso('Pagado: ' + it.nombre);
   }, sinMovimiento ? 0 : 340);
@@ -2273,7 +2304,7 @@ function guardarItem(id) {
   guardarEn('Plan', obj);
   if (yaPagado) {
     var M = obj.mes_inicio || mesDe(hoy);
-    guardarEn('Pagos', { id: idNuevo(), item: obj.id, mes: M, monto: obj.monto, fecha: hoy, cuota: obj.tipo === 'cuotas' ? num(obj.pagadas_previas) + 1 : '' });
+    guardarEn('Pagos', { id: idNuevo(), item: obj.id, mes: M, monto: obj.monto, fecha: hoy, cuota: obj.tipo === 'cuotas' ? num(obj.pagadas_previas) + 1 : '', creado: ahoraIso() });
     aviso('Pagado: ' + obj.nombre + ' · ' + R(obj.monto));
   } else aviso(id ? 'Guardado' : 'Agregado a ' + obj.grupo);
 }
