@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793908463148";</script>
+<script>window.APP_VERSION="1793909410478";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -434,6 +434,14 @@ button.fila-banco { background: none; border: 0; padding: 0; width: 100%; text-a
 <input type="file" id="archivo" accept=".csv,.ofx,.txt,.pdf,application/pdf" hidden>
 
 <script id="analisis">
+var MESES_EN = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+/** Cuota «1/8». Si el Sheet la guardó como fecha (1 de agosto → «Sat Aug 01 2026…» o «2026-08-01»), la devuelve a «1/8». */
+function textoParcela(p) {
+  var s = String(p || '').trim(), m = s.match(/^[A-Z][a-z]{2} ([A-Z][a-z]{2}) (\d{2}) \d{4}/);
+  if (m && MESES_EN[m[1]]) return +m[2] + '/' + MESES_EN[m[1]];
+  m = s.match(/^\d{4}-(\d{2})-(\d{2})(T|$)/);
+  return m ? +m[2] + '/' + +m[1] : s;
+}
 // Análisis puro (sin DOM). Lo prueba test/test.js.
 var EXCLUIDAS = ['Pago de tarjeta', 'Transferencias', 'Ingreso'];
 
@@ -551,7 +559,7 @@ function analizar(movs, cfg, hoy, periodo) {
   // Cuotas (parcelas) que ya están comprometidas para los próximos meses
   var compras = {};
   movs.forEach(function (m) {
-    var p = String(m.parcela || '').match(/^(\d+)\/(\d+)$/);
+    var p = textoParcela(m.parcela).match(/^(\d+)\/(\d+)$/);
     if (!p || !(m.monto > 0)) return;
     var k = claveComercio(m.comercio) + '|' + p[2] + '|' + m.monto.toFixed(2);
     if (!compras[k] || +p[1] > compras[k].k) compras[k] = { k: +p[1], n: +p[2], mes: mesDe(m.fecha), monto: m.monto, nombre: nombreComercio(m.comercio) };
@@ -1473,7 +1481,7 @@ function filaMov(m) {
   var exc = EXCLUIDAS.indexOf(m.categoria) > -1, desc = descripcion(m);
   return '<button class="mov' + (exc ? ' excluido' : '') + '" data-mov="' + esc(m.id) + '">' + logoBanco(m.cuenta) +
     '<span style="min-width:0"><span class="nom">' + esc(desc || nombreComercio(m.comercio)) + '</span>' +
-    '<span class="meta">' + (desc ? esc(nombreComercio(m.comercio)) + ' · ' : '') + esc(m.categoria) + (m.parcela ? ' · cuota ' + esc(m.parcela) : '') + (m.hora ? ' · ' + esc(m.hora) : '') + '</span></span>' +
+    '<span class="meta">' + (desc ? esc(nombreComercio(m.comercio)) + ' · ' : '') + esc(m.categoria) + (m.parcela ? ' · cuota ' + esc(textoParcela(m.parcela)) : '') + (m.hora ? ' · ' + esc(m.hora) : '') + '</span></span>' +
     '<span class="m-col"><span class="m' + (m.monto < 0 ? ' entrada' : '') + '">' + (m.monto < 0 ? '+ ' : '') + R(Math.abs(m.monto)) + '</span>' +
     '<span class="tag-met ' + (m.metodo === 'credito' ? 's-cred' : 's-deb') + '">' + (NOMBRE_METODO[m.metodo] || m.metodo || '') + '</span></span></button>';
 }
