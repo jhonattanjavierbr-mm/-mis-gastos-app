@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1793801837367";</script>
+<script>window.APP_VERSION="1793893545319";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -861,6 +861,16 @@ function usoTarjeta(c) {
   return Math.max(0, num(c.saldo));
 }
 
+/** Ingreso registrado a mano que el banco ya informó (≤ 5% de diferencia y ≤ 5 días): es el mismo, no cuenta dos veces. */
+function ingresoYaDelBanco(m, movs) {
+  if (!/^manual$/i.test(m.origen || '') || m.categoria !== 'Ingreso') return false;
+  return movs.some(function (b) {
+    if (b === m || b.categoria !== 'Ingreso' || /^manual$/i.test(b.origen || '') || !(b.monto <= -3000)) return false;
+    var dias = Math.abs((Date.parse(b.fecha + 'T12:00:00Z') - Date.parse(m.fecha + 'T12:00:00Z')) / 86400000);
+    return dias <= 5 && Math.abs(b.monto - m.monto) <= Math.abs(m.monto) * 0.05;
+  });
+}
+
 // Lo que pagas por plan (alquiler, cuentas, impuestos, cuotas, personas): no cuenta como gasto del día a día
 var PLANEADAS = ['Alquiler', 'Impuestos y contador', 'Préstamos e intereses', 'Personas (Pix)', 'Casa y servicios'];
 /**
@@ -876,13 +886,13 @@ function gastoDiario(d, hoy) {
   }), function (m) { return m.monto; }));
   var presupuesto = redondear(V.entra - V.pagar), disponible = redondear(presupuesto - variable);
   var dias = diasDelMes(M) - +hoy.slice(8, 10) + 1;
-  var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000; });
+  var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000 && !ingresoYaDelBanco(m, movs); });
   var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
   // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
   // …salvo que después corregiste a mano el saldo de esa cuenta (el saldo nuevo ya lo incluye)
   // (cualquier cuenta: el ingreso puede haberse registrado con otra cuenta elegida por defecto)
   var corregida = function (m) { return (d.cuentas || []).some(function (c) { return c.manual && String(c.actualizado) >= (/^\d{4}-\d{2}-\d{2}/.test(String(m.creado)) ? String(m.creado) : m.fecha); }); };
-  var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0 && !corregida(m); }), function (m) { return -m.monto; }));
+  var pendiente = redondear(suma(movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.origen === 'Manual' && m.monto < 0 && !corregida(m) && !ingresoYaDelBanco(m, movs); }), function (m) { return -m.monto; }));
   var enCuentas = cuentas.length ? redondear(suma(cuentas, function (c) { return num(c.saldo); }) + pendiente) : null;
   var esperando = !!V.entra && !cobro.length;
   var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
@@ -903,7 +913,7 @@ function gastoDiario(d, hoy) {
 function repartoSueldo(d, hoy) {
   var M = mesDe(hoy), dia = +hoy.slice(8, 10), V = vistaMes(d, M, M), movs = d.movs || [];
   var esGusto = function (o) { return /^gustos?$/i.test(o.item.grupo || ''); };
-  var cobros = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000; });
+  var cobros = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000 && !ingresoYaDelBanco(m, movs); });
   var real = redondear(suma(cobros, function (m) { return -m.monto; }));
   var ingreso = real || V.entra;
   var vence = function (o) { return num(o.item.vence_dia); };
