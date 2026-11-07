@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0E2117">
+<title>Mis Gastos · nuevo diseño (prueba)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg1: #0E2117; --bg2: #16291E;
+  --cream: #F5F1EA; --muted: rgba(245,241,234,.64); --faint: rgba(245,241,234,.4); --line: rgba(245,241,234,.1);
+  --card: rgba(245,241,234,.045); --gold: #E8D5A0; --gold2: #F3E2B3;
+  --pinho: #2F5D43; --emerald: #4A7C5E; --lima: #B9E37A;
+  --rojo: #E0644E; --amar: #E8B954; --azul: #7C9BF0; --morado: #A98BEA; --verde: #6EC77F; --gris: #8FA396;
+  --ease: cubic-bezier(.22,1,.36,1);
+  --serif: 'Fraunces', Georgia, serif; --sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg1); color: var(--cream); font-family: var(--sans); }
+body {
+  min-height: 100vh;
+  background: radial-gradient(60% 45% at 50% 0%, rgba(232,213,160,.10) 0%, transparent 60%),
+              radial-gradient(50% 40% at 50% 100%, rgba(74,124,94,.14) 0%, transparent 65%),
+              linear-gradient(var(--bg1) 0%, var(--bg2) 55%, var(--bg1) 100%);
+  background-attachment: fixed;
+}
+.wrap { max-width: 480px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom)); }
+.banner { font-size: 11.5px; color: var(--faint); text-align: center; margin-bottom: 14px; }
+.banner b { color: var(--gold); font-weight: 600; }
+
+/* encabezados al estilo editorial */
+.eyebrow { display: inline-flex; gap: 6px; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold); background: rgba(232,213,160,.08); border: 1px solid rgba(232,213,160,.22); border-radius: 100px; padding: 6px 12px; }
+.titulo { font-family: var(--serif); font-style: italic; font-weight: 400; text-transform: uppercase; color: var(--gold2);
+  font-size: 30px; line-height: 1.08; letter-spacing: .01em; margin: 14px 0 6px; }
+.sub { color: var(--muted); font-size: 14.5px; line-height: 1.5; margin: 0; }
+.cab { text-align: center; margin: 6px 0 22px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; margin-bottom: 14px; }
+.card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.card h3 small { margin-left: auto; color: var(--faint); font-weight: 500; font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ícono brillante (como los cuadraditos de Trilha) */
+.ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 17px; flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 16px rgba(0,0,0,.25); }
+.ic.verde { background: linear-gradient(160deg, #8EE29C, #3E9A55); }
+.ic.rojo { background: linear-gradient(160deg, #F59A86, #C9472F); }
+.ic.amar { background: linear-gradient(160deg, #F6D58A, #CE9630); }
+.ic.azul { background: linear-gradient(160deg, #A9C0FF, #4E6FD6); }
+.ic.morado { background: linear-gradient(160deg, #C9B3FF, #7752D8); }
+.ic.gris { background: linear-gradient(160deg, #BFCFC5, #5E7466); }
+.ic.oro { background: linear-gradient(160deg, #FBE7B0, #C9A24B); }
+
+/* número grande */
+.hero { text-align: center; padding: 24px 18px 20px; position: relative; overflow: hidden; }
+.hero .monto { font-family: var(--serif); font-style: italic; font-size: 58px; line-height: 1; color: var(--cream); margin: 12px 0 8px; letter-spacing: -.01em; }
+.hero .monto small { font-size: 24px; color: var(--muted); margin-right: 4px; }
+.hero .fuente { font-size: 12.5px; color: var(--faint); }
+.hero .fuente u { color: var(--lima); text-decoration: none; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.mini { background: rgba(0,0,0,.18); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; text-align: left; }
+.mini span { display: block; font-size: 11.5px; color: var(--faint); }
+.mini b { display: block; font-size: 19px; margin-top: 4px; }
+.mini b.lima { color: var(--lima); }
+
+/* órdenes del día */
+.tarea { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.tarea:first-of-type { border-top: 0; padding-top: 2px; }
+.tarea .txt { flex: 1; min-width: 0; }
+.tarea .txt b { display: block; font-size: 15px; font-weight: 600; }
+.tarea .txt span { font-size: 12.5px; color: var(--faint); }
+.tarea .m { font-weight: 700; font-size: 15px; }
+.check { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(245,241,234,.25); display: grid; place-items: center; flex-shrink: 0; transition: .25s var(--ease); }
+.tarea.hecha .check { background: var(--lima); border-color: var(--lima); animation: pop .45s var(--ease); }
+.tarea.hecha .check::after { content: '✓'; color: #10261A; font-weight: 800; font-size: 15px; }
+.tarea.hecha .txt b { text-decoration: line-through; color: var(--faint); }
+@keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.progreso { height: 6px; border-radius: 9px; background: rgba(245,241,234,.1); overflow: hidden; margin-top: 12px; }
+.progreso i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, var(--emerald), var(--lima)); transition: width .8s var(--ease); }
+
+/* racha */
+.racha { display: flex; gap: 14px; align-items: center; }
+.racha .fuego { font-size: 34px; filter: drop-shadow(0 6px 14px rgba(240,140,60,.45)); animation: lat 2.4s ease-in-out infinite; }
+@keyframes lat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.dias { display: flex; gap: 6px; margin-top: 10px; }
+.dias i { flex: 1; height: 26px; border-radius: 8px; background: rgba(245,241,234,.08); display: grid; place-items: center; font-style: normal; font-size: 10.5px; color: var(--faint); }
+.dias i.ok { background: rgba(185,227,122,.18); color: var(--lima); }
+.dias i.hoy { outline: 1.5px solid var(--gold); }
+
+/* reparto en reales */
+.barra { display: flex; height: 14px; border-radius: 9px; overflow: hidden; gap: 3px; margin: 6px 0 4px; }
+.barra i { display: block; height: 100%; transform-origin: left; animation: crecer 1s var(--ease) both; }
+@keyframes crecer { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.area { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.area .txt { flex: 1; }
+.area .txt b { display: block; font-size: 15px; font-weight: 600; }
+.area .txt span { font-size: 12.5px; color: var(--faint); }
+.area .m { text-align: right; font-weight: 700; }
+.area .m small { display: block; font-weight: 500; font-size: 11.5px; color: var(--faint); }
+.mbar { height: 5px; border-radius: 9px; background: rgba(245,241,234,.08); margin-top: 7px; overflow: hidden; }
+.mbar i { display: block; height: 100%; border-radius: 9px; }
+
+/* diagnóstico */
+.gauge { position: relative; height: 10px; border-radius: 9px; background: linear-gradient(90deg, #6EC77F, #E8B954 55%, #E0644E); margin: 22px 0 8px; }
+.gauge .aguja { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--bg1); transform: translate(-50%, -50%); left: 0; transition: left 1.4s var(--ease); box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.escala { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--faint); }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 100px; padding: 5px 11px; }
+.pill.amar { background: rgba(232,185,84,.18); color: var(--amar); }
+.pill.verde { background: rgba(110,199,127,.16); color: var(--verde); }
+.pill.rojo { background: rgba(224,100,78,.18); color: var(--rojo); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.met { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.met span { font-size: 12px; color: var(--faint); }
+.met b { display: block; margin-top: 5px; font-size: 17px; color: var(--gold2); }
+.alerta { display: flex; gap: 12px; background: rgba(232,185,84,.08); border: 1px solid rgba(232,185,84,.25); border-radius: 18px; padding: 15px; font-size: 14px; line-height: 1.5; color: var(--muted); margin-bottom: 14px; }
+.alerta b { color: var(--cream); }
+.fuga { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.fuga:first-of-type { border-top: 0; }
+.fuga .txt { flex: 1; } .fuga .txt b { display: block; font-size: 14.5px; } .fuga .txt span { font-size: 12.5px; color: var(--faint); }
+
+/* metas */
+.meta { padding: 14px 0; border-top: 1px solid var(--line); }
+.meta:first-of-type { border-top: 0; padding-top: 0; }
+.meta .fila { display: flex; align-items: center; gap: 12px; }
+.meta .txt { flex: 1; } .meta .txt b { display: block; font-size: 15px; } .meta .txt span { font-size: 12.5px; color: var(--faint); }
+.meta .pct { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--gold2); }
+.meta .mbar { height: 8px; margin-top: 10px; }
+.meta .dato { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.meta .dato b { color: var(--lima); }
+svg.curva path.linea { stroke-dasharray: 600; stroke-dashoffset: 600; transition: stroke-dashoffset 1.8s var(--ease); }
+svg.curva.dibujar path.linea { stroke-dashoffset: 0; }
+
+/* movimientos */
+.dia { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin: 18px 4px 6px; }
+.mov { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+.mov:first-child { border-top: 0; }
+.logo { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; font-size: 12px; color: #fff; flex-shrink: 0; }
+.logo.nu { background: #8A2BE2; } .logo.it { background: #EC7000; font-size: 10px; }
+.mov .txt { flex: 1; min-width: 0; } .mov .txt b { display: block; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mov .txt span { font-size: 12px; color: var(--faint); }
+.mov .m { font-weight: 700; } .mov .m.in { color: var(--lima); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 4px; }
+.chip { flex-shrink: 0; padding: 8px 14px; border-radius: 100px; border: 1px solid var(--line); font-size: 13px; color: var(--muted); background: var(--card); }
+.chip.on { background: var(--cream); color: #10261A; font-weight: 700; border-color: var(--cream); }
+
+/* botón principal */
+.cta { display: block; width: 100%; padding: 17px; border: 0; border-radius: 100px; font: 800 16px var(--sans); color: #1E2A20; cursor: pointer;
+  background: linear-gradient(135deg, var(--gold), var(--gold2)); box-shadow: 0 10px 30px rgba(232,213,160,.18); transition: transform .15s ease; }
+.cta:active { transform: scale(.985); }
+.cta.verde { color: var(--cream); background: linear-gradient(135deg, var(--pinho), var(--emerald)); box-shadow: 0 8px 30px rgba(74,124,94,.45); }
+
+/* barra de abajo */
+nav { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); background: rgba(14,33,23,.82);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid var(--line); display: flex; justify-content: center; z-index: 10; }
+nav .in { display: flex; width: 100%; max-width: 480px; justify-content: space-between; }
+nav button { flex: 1; background: none; border: 0; color: var(--faint); font: 600 11px var(--sans); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; cursor: pointer; transition: color .2s; }
+nav button .e { font-size: 21px; filter: grayscale(1) opacity(.6); transition: .25s var(--ease); }
+nav button.on { color: var(--gold2); }
+nav button.on .e { filter: none; transform: translateY(-2px) scale(1.1); }
+.fab { position: fixed; right: 20px; bottom: calc(86px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%; border: 0; z-index: 11;
+  font-size: 28px; color: #10261A; background: linear-gradient(135deg, var(--lima), #DDF5B0); box-shadow: 0 10px 30px rgba(185,227,122,.35); }
+
+/* aparición al bajar y al cambiar de pestaña */
+.pant { display: none; }
+.pant.on { display: block; animation: entra .5s var(--ease) both; }
+@keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise { opacity: 0; transform: translateY(26px); transition: opacity .75s var(--ease), transform .75s var(--ease); }
+.rise.in { opacity: 1; transform: none; }
+.confeti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+.confeti i { position: absolute; top: -10px; animation: cae linear forwards; border-radius: 2px; }
+@keyframes cae { to { transform: translateY(105vh) rotate(720deg); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .rise { opacity: 1; transform: none; transition: none; } .pant.on, .barra i { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">✦ <b>Pantalla de prueba</b> con números de ejemplo · tu app no cambió</div>
+
+  <!-- ============ HOY ============ -->
+  <section class="pant on" id="p-hoy">
+    <div class="cab rise">
+      <span class="eyebrow">✦ Tu día · sáb 7 nov</span>
+      <h1 class="titulo">Hola. Esto es<br>lo que importa hoy.</h1>
+    </div>
+
+    <div class="card hero rise">
+      <span class="eyebrow">Te queda</span>
+      <div class="monto num"><small>R$</small><span data-contar="5120">0</span></div>
+      <div class="fuente">En Itaú + Nubank · hace 24 min · <u>corregir</u></div>
+      <div class="duo">
+        <div class="mini"><span>Hoy puedes gastar</span><b class="lima num">R$ 182</b></div>
+        <div class="mini"><span>Te pagan de nuevo</span><b class="num">en 28 días</b></div>
+      </div>
+    </div>
+
+    <div class="card rise" id="tareas">
+      <h3><span class="ic oro">⚡</span>Tus 3 cosas de hoy<small id="cuenta">0 de 3</small></h3>
+      <div class="tarea"><div class="check"></div><div class="txt"><b>Pagar DCTF septiembre</b><span>Vence el lunes · Pix desde Itaú</span></div><div class="m num">R$ 189</div></div>
+      <div class="tarea"><div class="check"></div><div class="txt"><b>¿Qué fue esta compra?</b><span>R$ 74 · PAG*LOJA · toca para elegir</span></div><div class="m">›</div></div>
+      <div class="tarea"><div class="check"></div><div class="txt"><b>Apartar la cuota del préstamo</b><span>Vence el día 9 · déjala en la cuenta</span></div><div class="m num">R$ 900</div></div>
+      <div class="progreso"><i id="prog" style="width:0%"></i></div>
+    </div>
+
+    <div class="card rise">
+      <div class="racha">
+        <div class="fuego">🔥</div>
+        <div><b style="font-size:17px">6 días dentro del plan</b><div class="sub" style="font-size:13px">Gastaste menos que tu límite diario</div></div>
+      </div>
+      <div class="dias"><i class="ok">L</i><i class="ok">M</i><i class="ok">M</i><i class="ok">J</i><i class="ok">V</i><i class="ok hoy">S</i><i>D</i></div>
+    </div>
+
+    <div class="card rise">
+      <h3><span class="ic azul">💳</span>Meta de Itaú: más límite<small>1 de 2 meses</small></h3>
+      <p class="sub" style="font-size:13.5px">Paga la factura <b style="color:var(--cream)">completa y a tiempo</b> dos meses seguidos. Próxima: R$ 1.120 el 15 nov.</p>
+      <div class="progreso"><i data-ancho="50" style="width:0%"></i></div>
+    </div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section class="pant" id="p-plan">
+    <div class="cab rise">
+      <span class="eyebrow">✦ Tu plan de noviembre</span>
+      <h1 class="titulo">Tu sueldo,<br>en reales.</h1>
+      <p class="sub">Antes de gastar, cada real ya tiene un lugar.</p>
+    </div>
+    <div class="card rise">
+      <h3>Recibiste R$ 18.400<small>Ya pagaste R$ 12.900</small></h3>
+      <div class="barra"><i style="flex:12900;background:var(--gris)"></i><i style="flex:189;background:var(--rojo)"></i><i style="flex:740;background:var(--amar)"></i><i style="flex:3300;background:var(--azul)"></i><i style="flex:1000;background:var(--morado)"></i><i style="flex:271;background:var(--verde)"></i></div>
+      <div class="area"><span class="ic gris">✓</span><div class="txt"><b>Ya pagado</b><span>Alquiler, tarjetas, impuestos…</span></div><div class="m num">R$ 12.900</div></div>
+      <div class="area"><span class="ic rojo">!</span><div class="txt"><b>Pagar ya</b><span>Vence en 7 días o menos</span></div><div class="m num">R$ 189<small>1 pago</small></div></div>
+      <div class="area"><span class="ic amar">⏳</span><div class="txt"><b>Puede esperar</b><span>Más adelante este mes</span></div><div class="m num">R$ 740<small>4 pagos</small></div></div>
+      <div class="area"><span class="ic azul">🛒</span><div class="txt"><b>Día a día</b><span>Mercado, transporte, comida<div class="mbar"><i style="width:58%;background:var(--azul)"></i></div></span></div><div class="m num">R$ 3.300<small>llevas R$ 1.920</small></div></div>
+      <div class="area"><span class="ic morado">🎧</span><div class="txt"><b>Gustos</b><span>Casa, ropa, vacaciones<div class="mbar"><i style="width:34%;background:var(--morado)"></i></div></span></div><div class="m num">R$ 1.000<small>usaste R$ 320</small></div></div>
+      <div class="area"><span class="ic verde">🌱</span><div class="txt"><b>Libre</b><span>Va a tu reserva y a tus sueños</span></div><div class="m num">R$ 271</div></div>
+    </div>
+    <div class="alerta rise"><span>💡</span><div>Si todo sigue así, <b>terminas el mes con R$ 271 de sobra</b>. El día 1 te digo cuánto sobró de verdad.</div></div>
+  </section>
+
+  <!-- ============ MOVIMIENTOS ============ -->
+  <section class="pant" id="p-mov">
+    <div class="cab rise">
+      <span class="eyebrow">✦ Llega solo de tus bancos</span>
+      <h1 class="titulo">Tus<br>movimientos.</h1>
+    </div>
+    <div class="chips rise"><span class="chip on">Todo</span><span class="chip">Crédito</span><span class="chip">Débito y Pix</span><span class="chip">Sin categoría · 1</span></div>
+    <div class="dia">Hoy</div>
+    <div class="card rise" style="padding:6px 16px">
+      <div class="mov"><div class="logo nu">nu</div><div class="txt"><b>Supermercado</b><span>Supermercado · 10:42</span></div><div class="m num">R$ 702,84</div></div>
+      <div class="mov"><div class="logo it">itaú</div><div class="txt"><b>Condominio</b><span>Casa · pagado ✓</span></div><div class="m num">R$ 1.480,00</div></div>
+    </div>
+    <div class="dia">Ayer</div>
+    <div class="card rise" style="padding:6px 16px">
+      <div class="mov"><div class="logo it">itaú</div><div class="txt"><b>Audífonos</b><span>Gustos · crédito · cuota 1/1</span></div><div class="m num">R$ 320,00</div></div>
+      <div class="mov"><div class="logo nu">nu</div><div class="txt"><b>Renner</b><span>Ropa · cuota 1/8</span></div><div class="m num">R$ 119,19</div></div>
+      <div class="mov"><div class="logo it">itaú</div><div class="txt"><b>Sueldo</b><span>Ingreso</span></div><div class="m in num">+ R$ 18.400,00</div></div>
+    </div>
+  </section>
+
+  <!-- ============ METAS ============ -->
+  <section class="pant" id="p-metas">
+    <div class="cab rise">
+      <span class="eyebrow">✦ Con número y con fecha</span>
+      <h1 class="titulo">Tus metas,<br>paso a paso.</h1>
+      <p class="sub">Cuánto guardar cada mes y cuándo llegas.</p>
+    </div>
+    <div class="card rise">
+      <svg class="curva" viewBox="0 0 320 150" width="100%" style="display:block">
+        <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#E0644E"/><stop offset=".5" stop-color="#E8B954"/><stop offset="1" stop-color="#B9E37A"/></linearGradient>
+        <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4A7C5E" stop-opacity=".45"/><stop offset="1" stop-color="#4A7C5E" stop-opacity="0"/></linearGradient></defs>
+        <g stroke="rgba(245,241,234,.08)" stroke-dasharray="3 5"><line x1="10" x2="310" y1="30" y2="30"/><line x1="10" x2="310" y1="65" y2="65"/><line x1="10" x2="310" y1="100" y2="100"/></g>
+        <path d="M14 122 C 70 120, 90 98, 120 92 S 190 60, 220 44 S 280 24, 306 18 L306 132 L14 132 Z" fill="url(#g2)"/>
+        <path class="linea" d="M14 122 C 70 120, 90 98, 120 92 S 190 60, 220 44 S 280 24, 306 18" fill="none" stroke="url(#g1)" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="14" cy="122" r="6" fill="#E0644E" stroke="#fff" stroke-width="2.5"/>
+        <circle cx="306" cy="18" r="6" fill="#B9E37A" stroke="#fff" stroke-width="2.5"/>
+        <g fill="rgba(245,241,234,.45)" font-size="10" font-family="Inter"><text x="8" y="146">Hoy</text><text x="108" y="146">Feb</text><text x="206" y="146">May</text><text x="280" y="146">Ago</text></g>
+      </svg>
+      <p class="sub" style="text-align:center;margin-top:8px;font-size:13px">Lo que debes baja y lo que ahorras sube</p>
+    </div>
+    <div class="card rise">
+      <div class="meta"><div class="fila"><span class="ic rojo">🏦</span><div class="txt"><b>Préstamo</b><span>Faltan 5 cuotas de R$ 900</span></div><div class="pct">58%</div></div>
+        <div class="mbar"><i style="width:58%;background:linear-gradient(90deg,var(--rojo),var(--amar))"></i></div>
+        <div class="dato">Terminas en <b>marzo 2027</b> · te cuesta R$ 410 de intereses</div></div>
+      <div class="meta"><div class="fila"><span class="ic verde">🛟</span><div class="txt"><b>Reserva de emergencia</b><span>R$ 2.400 de R$ 15.000</span></div><div class="pct">16%</div></div>
+        <div class="mbar"><i style="width:16%;background:var(--verde)"></i></div>
+        <div class="dato">Guardando <b>R$ 600 al mes</b> llegas en mayo 2028</div></div>
+      <div class="meta"><div class="fila"><span class="ic azul">✈️</span><div class="txt"><b>Vacaciones</b><span>R$ 1.500 de R$ 6.000</span></div><div class="pct">25%</div></div>
+        <div class="mbar"><i style="width:25%;background:var(--azul)"></i></div>
+        <div class="dato">Guardando <b>R$ 1.500 al mes</b> llegas en febrero ✓</div></div>
+    </div>
+  </section>
+
+  <!-- ============ DIAGNÓSTICO ============ -->
+  <section class="pant" id="p-diag">
+    <div class="cab rise">
+      <span class="eyebrow">✦ Revisión de tu mes</span>
+      <h1 class="titulo">Tu dinero,<br>en una mirada.</h1>
+    </div>
+    <div class="card rise">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>Nivel de control</b><span class="pill amar">Medio · mejorando</span></div>
+      <div class="gauge"><span class="aguja" data-pos="58"></span></div>
+      <div class="escala"><span>Bajo</span><span>Normal</span><span>Medio</span><span>Alto</span></div>
+    </div>
+    <div class="grid2 rise" style="margin-bottom:14px">
+      <div class="met"><span>Sobra del mes</span><b>R$ 271</b></div>
+      <div class="met"><span>Fugas</span><b>R$ 186/mes</b></div>
+      <div class="met"><span>Tarjeta / sueldo</span><b>18% · sano</b></div>
+      <div class="met"><span>Pagos a tiempo</span><b>9 de 10</b></div>
+    </div>
+    <div class="alerta rise"><span>⚠️</span><div>No ganas poco: tienes <b>fugas pequeñas</b> que suman <b>R$ 186 al mes</b>. Si las cortas, en un año son <b>R$ 2.232</b> para tus vacaciones.</div></div>
+    <div class="card rise">
+      <h3><span class="ic amar">🔍</span>Fugas que encontré</h3>
+      <div class="fuga"><span class="ic gris">↻</span><div class="txt"><b>Suscripciones</b><span>3 cobros fijos · ¿usas todas?</span></div><div class="m num">R$ 97</div></div>
+      <div class="fuga"><span class="ic gris">%</span><div class="txt"><b>Tarifas e intereses</b><span>Itaú · cheque especial 2 días</span></div><div class="m num">R$ 41</div></div>
+      <div class="fuga"><span class="ic gris">🌙</span><div class="txt"><b>Compras de madrugada</b><span>Delivery después de las 23 h</span></div><div class="m num">R$ 48</div></div>
+    </div>
+    <div class="card rise">
+      <h3><span class="ic azul">🧾</span>PJ y personal, separados</h3>
+      <p class="sub" style="font-size:13.5px">Impuestos del mes: <b style="color:var(--cream)">DAS + DCTF R$ 1.120</b>. Ya los aparté de tu sueldo para que no te tomen por sorpresa.</p>
+    </div>
+  </section>
+</div>
+
+<button class="fab" aria-label="Agregar">＋</button>
+<nav><div class="in">
+  <button class="on" data-p="hoy"><span class="e">☀️</span>Hoy</button>
+  <button data-p="plan"><span class="e">🧭</span>Plan</button>
+  <button data-p="mov"><span class="e">🧾</span>Movimientos</button>
+  <button data-p="metas"><span class="e">🎯</span>Metas</button>
+  <button data-p="diag"><span class="e">📊</span>Revisión</button>
+</div></nav>
+
+<script>
+// Aparece al bajar, uno tras otro
+var io = new IntersectionObserver(function (es) {
+  es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); animar(e.target); } });
+}, { threshold: .12 });
+function observar(p) { p.querySelectorAll('.rise').forEach(function (el, i) { el.classList.remove('in'); el.style.transitionDelay = (i * 70) + 'ms'; io.observe(el); }); }
+function animar(el) {
+  el.querySelectorAll('[data-contar]').forEach(function (n) {
+    var fin = +n.dataset.contar, t0 = performance.now();
+    (function paso(t) { var k = Math.min(1, (t - t0) / 1200), v = Math.round(fin * (1 - Math.pow(1 - k, 3))); n.textContent = v.toLocaleString('pt-BR'); if (k < 1) requestAnimationFrame(paso); })(t0);
+  });
+  el.querySelectorAll('[data-ancho]').forEach(function (b) { setTimeout(function () { b.style.width = b.dataset.ancho + '%'; }, 300); });
+  el.querySelectorAll('.aguja').forEach(function (a) { setTimeout(function () { a.style.left = a.dataset.pos + '%'; }, 300); });
+  el.querySelectorAll('svg.curva').forEach(function (s) { setTimeout(function () { s.classList.add('dibujar'); }, 200); });
+}
+// Pestañas
+document.querySelectorAll('nav button').forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll('nav button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    document.querySelectorAll('.pant').forEach(function (p) { p.classList.toggle('on', p.id === 'p-' + b.dataset.p); });
+    window.scrollTo(0, 0); observar(document.getElementById('p-' + b.dataset.p));
+  };
+});
+// Tareas del día: tocar = hecha; las 3 = confeti
+document.querySelectorAll('.tarea').forEach(function (t) {
+  t.onclick = function () {
+    t.classList.toggle('hecha');
+    var n = document.querySelectorAll('.tarea.hecha').length;
+    document.getElementById('cuenta').textContent = n + ' de 3';
+    document.getElementById('prog').style.width = (n / 3 * 100) + '%';
+    if (n === 3) confeti();
+  };
+});
+function confeti() {
+  var c = document.createElement('div'); c.className = 'confeti';
+  var cols = ['#B9E37A', '#E8D5A0', '#F3E2B3', '#6EC77F', '#ffffff'];
+  for (var i = 0; i < 70; i++) {
+    var p = document.createElement('i'), d = 6 + Math.random() * 7;
+    p.style.cssText = 'left:' + Math.random() * 100 + '%;width:' + d + 'px;height:' + d * .42 + 'px;background:' + cols[i % 5] + ';animation-duration:' + (2 + Math.random() * 1.6) + 's;animation-delay:' + Math.random() * .5 + 's';
+    c.appendChild(p);
+  }
+  document.body.appendChild(c); setTimeout(function () { c.remove(); }, 4500);
+}
+observar(document.getElementById('p-hoy'));
+</script>
+</body>
+</html>
