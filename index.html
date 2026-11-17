@@ -12,14 +12,14 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1794018254958";</script>
+<script>window.APP_VERSION="1794939811316";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#0b1610">
+<meta name="theme-color" content="#0E2117">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: app de banco de una columna; saldo del mes arriba, acciones redondas, tarjetas y barra de pestañas fija abajo.
    Un solo tema oscuro a propósito (verde bosque + lima). */
@@ -402,6 +402,76 @@ button.fila-banco { background: none; border: 0; padding: 0; width: 100%; text-a
 .segmento.ancho { display: flex; width: 100%; }
 .segmento.ancho button { flex: 1; }
 @media (min-width: 560px) { .dos-lados { grid-template-columns: 1fr 1fr; } }
+
+/* ================= Diseño nuevo (inspirado en Trilha): verde bosque, crema y dorado, títulos en itálica ================= */
+:root {
+  --bg: #0E2117; --surface: #172B20; --surface-2: #213A2C; --line: rgb(245 241 234 / .1);
+  --ink: #F5F1EA; --ink-2: #CFC9BC; --muted: #8E9A8F;
+  --gold: #E8D5A0; --gold-2: #F3E2B3;
+  --lima: #B9E37A; --lima-ink: #10261A; --lima-soft: #24402C;
+  --good: #8FD49B; --warn: #E8B954; --bad: #EF7A63;
+  --good-bg: #1E3A27; --warn-bg: #3A3118; --bad-bg: #42221C;
+  --cred: #8FAAF2; --cred-bg: #1E2B45;
+  --f-display: "Inter", -apple-system, "Segoe UI", sans-serif;
+  --f-body: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-serif: "Fraunces", Georgia, serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+body {
+  background: radial-gradient(60% 40% at 50% 0%, rgb(232 213 160 / .09) 0%, transparent 60%),
+              radial-gradient(50% 40% at 50% 100%, rgb(74 124 94 / .14) 0%, transparent 65%),
+              linear-gradient(#0E2117 0%, #16291E 55%, #0E2117 100%) fixed;
+}
+h1, h2, h3 { letter-spacing: -0.01em; }
+.card { background: rgb(245 241 234 / .045); border: 1px solid var(--line); border-radius: 22px; }
+.mod { border: 0; }
+.marca .logo { background: linear-gradient(160deg, #CFF09A, #7FBF55); box-shadow: inset 0 1px 0 rgb(255 255 255 / .4); }
+.chip-estado { background: rgb(245 241 234 / .06); border: 1px solid var(--line); }
+.titulo-vista { display: none; }
+.cab-vista { text-align: center; padding: 4px 0 6px; display: grid; justify-items: center; gap: 12px; }
+.etiqueta { display: inline-flex; align-items: center; gap: 6px; width: fit-content; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold); background: rgb(232 213 160 / .08); border: 1px solid rgb(232 213 160 / .22); border-radius: 100px; padding: 6px 12px; }
+.titulo-ed { font-family: var(--f-serif); font-style: italic; font-weight: 400; text-transform: uppercase; color: var(--gold-2); font-size: 30px; line-height: 1.08; letter-spacing: .01em; margin: 0; }
+.hero-hoy { text-align: center; justify-items: center; gap: 10px; padding: 22px 18px 18px; }
+.hero-num { font-family: var(--f-serif); font-style: italic; font-weight: 400; font-size: clamp(46px, 15vw, 62px); line-height: 1; color: var(--ink); letter-spacing: -.01em; }
+.hero-num small { font-size: .4em; color: var(--muted); margin-right: 4px; }
+.hero-num.serif { font-size: clamp(34px, 10vw, 44px); color: var(--gold-2); }
+.hero-num.rojo { color: var(--bad); }
+.rep-fuente.centro { text-align: center; margin: 0; }
+.hero-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 6px; }
+.hero-mini { background: rgb(0 0 0 / .18); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; text-align: left; display: grid; gap: 4px; }
+.hero-mini span { font-size: 11.5px; color: var(--muted); }
+.hero-mini b { font-size: 19px; font-weight: 800; }
+.lima { color: var(--lima); }
+.tit-ic { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.tit-ic small { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 12px; }
+.ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 6px 16px rgb(0 0 0 / .25); }
+.ico.oro { background: linear-gradient(160deg, #FBE7B0, #C9A24B); }
+.tareas { gap: 0; }
+.tareas .tit-ic { margin-bottom: 8px; }
+.tarea { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.tarea:nth-child(2) { border-top: 0; }
+.t-txt { display: grid; gap: 2px; min-width: 0; }
+.t-txt b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-txt span { font-size: 12.5px; }
+.t-m { font-weight: 700; }
+.tabbar { background: rgb(14 33 23 / .85); }
+.reparto .hoy-monto { font-family: var(--f-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
+.tabbar button[aria-selected="true"] { color: var(--gold-2); }
+.tabbar button[aria-selected="true"] svg { transform: translateY(-2px) scale(1.08); transition: transform .3s var(--ease); }
+.fab { background: linear-gradient(135deg, var(--lima), #DDF5B0); box-shadow: 0 10px 30px rgb(185 227 122 / .3); }
+.btn.prim { background: linear-gradient(135deg, var(--gold), var(--gold-2)); color: #1E2A20; border: 0; }
+.sp-logo { background: linear-gradient(160deg, #CFF09A, #7FBF55); }
+#splash { background: #0E2117; }
+.entra > * { animation: sube-ed .6s var(--ease) backwards; }
+.entra > :nth-child(2) { animation-delay: .07s; } .entra > :nth-child(3) { animation-delay: .14s; }
+.entra > :nth-child(4) { animation-delay: .21s; } .entra > :nth-child(5) { animation-delay: .28s; }
+.entra > :nth-child(n+6) { animation-delay: .34s; }
+@keyframes sube-ed { from { transform: translateY(26px); opacity: 0; } }
+.check { transition: transform .2s var(--ease); }
+.check.on { animation: pop-ed .45s var(--ease); }
+@keyframes pop-ed { 0% { transform: scale(.6); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .entra > *, .check.on { animation: none; } }
 </style>
 
 <div id="splash" aria-hidden="true"><div class="sp-logo"><svg viewBox="0 0 24 24"><path class="sp-l1" d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path class="sp-l2" d="M15 8h5v5"/></svg></div></div>
@@ -421,11 +491,11 @@ button.fila-banco { background: none; border: 0; padding: 0; width: 100%; text-a
 <button class="fab" data-accion="agregar" aria-label="Agregar gasto o ingreso"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <nav class="tabbar" aria-label="Secciones">
   <div class="tabbar-in" role="tablist">
-    <button role="tab" data-tab="resumen" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
-    <button role="tab" data-tab="mimes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 1.5 1.5L8 6M4 13l1.5 1.5L8 12M11 7h9M11 13h9M11 19h9"/></svg>Mi Mes</button>
+    <button role="tab" data-tab="resumen" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Hoy</button>
+    <button role="tab" data-tab="mimes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Plan</button>
     <button role="tab" data-tab="movimientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h14M7 12h14M7 17h14M3 7h.01M3 12h.01M3 17h.01"/></svg>Movimientos</button>
-    <button role="tab" data-tab="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Análisis</button>
-    <button role="tab" data-tab="credito"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>Crédito</button>
+    <button role="tab" data-tab="metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Metas</button>
+    <button role="tab" data-tab="revision"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Revisión</button>
   </div>
 </nav>
 
@@ -826,14 +896,51 @@ function resumenDeudas(d) {
     var total = num(it.cuotas_total) || 1, hechas = Math.min(total, num(it.pagadas_previas) + pagos.length);
     var ult = pagos.map(function (p) { return String(p.fecha); }).sort().pop() || '';
     return { item: it, total: total, hechas: hechas, falta: redondear((total - hechas) * num(it.monto)),
-      deuda: redondear(total * num(it.monto)), terminada: hechas >= total, fecha: ult };
+      deuda: redondear(total * num(it.monto)), terminada: hechas >= total, fecha: ult, fin: finDeuda(it) };
   });
   var deuda = suma(lista, function (x) { return x.deuda; }), falta = suma(lista, function (x) { return x.falta; });
   return {
     activas: lista.filter(function (x) { return !x.terminada; }).sort(function (a, b) { return b.falta - a.falta; }),
     terminadas: lista.filter(function (x) { return x.terminada; }),
-    falta: redondear(falta), pct: deuda ? 1 - falta / deuda : 0
+    falta: redondear(falta), pct: deuda ? 1 - falta / deuda : 0,
+    // Mes de la última cuota de todas: desde el siguiente quedas sin deudas en cuotas
+    libreEn: lista.filter(function (x) { return !x.terminada && x.fin; }).map(function (x) { return x.fin; }).sort().pop() || ''
   };
+}
+
+/** Mes (yyyy-MM) de la última cuota: la cuota n cae en mes_inicio + (n − pagadas_previas − 1). */
+function finDeuda(it) {
+  if (it.tipo !== 'cuotas' || !it.mes_inicio) return '';
+  var total = num(it.cuotas_total) || 1;
+  return sumarMes(it.mes_inicio, Math.max(0, total - num(it.pagadas_previas) - 1));
+}
+
+/** Días hasta el próximo sueldo: el mismo día del mes del último ingreso grande (≥ R$ 3.000). null si no hay. */
+function diasHastaSueldo(movs, hoy) {
+  var ult = (movs || []).filter(function (m) { return m.categoria === 'Ingreso' && m.monto <= -3000; })
+    .map(function (m) { return m.fecha; }).sort().pop();
+  if (!ult) return null;
+  var dia = +ult.slice(8, 10), M = mesDe(hoy);
+  var prox = function (ym) { return ym + '-' + ('0' + Math.min(dia, diasDelMes(ym))).slice(-2); };
+  var f = prox(M);
+  if (f <= hoy || mesDe(ult) === M) f = prox(sumarMes(M, 1));
+  return Math.round((Date.parse(f + 'T12:00:00Z') - Date.parse(hoy + 'T12:00:00Z')) / 86400000);
+}
+
+/**
+ * Lo de hoy, máximo 3 (TDAH: poco y claro): pagos atrasados, que vencen en ≤ 3 días o urgentes.
+ * Devuelve [{ o (ocurrencia), cuando (texto), orden }].
+ */
+function tareasHoy(d, hoy) {
+  var M = mesDe(hoy), dia = +hoy.slice(8, 10), V = vistaMes(d, M, M);
+  return V.porPagar.map(function (o) {
+    var vence = num(o.item.vence_dia), falta = vence && o.mes === M ? Math.min(vence, diasDelMes(M)) - dia : null;
+    if (o.atrasado) return { o: o, cuando: 'Atrasado', orden: -100 };
+    if (falta !== null && falta < 0) return { o: o, cuando: 'Venció el día ' + vence, orden: -50 + falta };
+    if (falta !== null && falta <= 3) return { o: o, cuando: falta === 0 ? 'Vence hoy' : falta === 1 ? 'Vence mañana' : 'Vence en ' + falta + ' días', orden: falta };
+    if (o.item.prioridad === 'urgente') return { o: o, cuando: 'Urgente', orden: 10 };
+    return null;
+  }).filter(Boolean).sort(function (a, b) { return a.orden - b.orden || b.o.monto - a.o.monto; }).slice(0, 3);
 }
 
 /** Los próximos n meses: cuánto entra, cuánto hay que pagar y cuánto sobra. */
@@ -1011,7 +1118,7 @@ function consejos(d, hoy) {
   // 6. Préstamo caro activo con plata disponible
   var D = resumenDeudas(d);
   var prestamo = D.activas.filter(function (x) { return /pr[eé]stamo|empr[eé]stimo/i.test(x.item.nombre); })[0];
-  if (prestamo && V.sobra > 0) add(65, 'atento', prestamo.item.nombre + ' es tu deuda más cara. Si te sobra plata, adelanta cuotas.', 'mimes');
+  if (prestamo && V.sobra > 0) add(65, 'atento', prestamo.item.nombre + ' es tu deuda más cara. Si te sobra plata, adelanta cuotas.', 'metas');
   // 7. Intereses y seguros que se pueden evitar
   var desde = sumarMes(M, -2) + '-01';
   var evitables = movs.filter(function (m) { return m.fecha >= desde && m.monto > 0 && /seguro cart|juros|iof|multa|encargos/i.test(m.comercio); });
@@ -1350,12 +1457,12 @@ var ICO = {
   tarjeta: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/></svg>'
 };
 function render() {
-  document.querySelectorAll('.tabbar button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === S.tab); });
+  document.querySelectorAll('.tabbar button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === S.tab || (b.dataset.tab === 'revision' && /analisis|credito/.test(S.tab))); });
   var A = analizar(S.movs, S.cfg, hoy, S.periodo);
-  var titulos = { mimes: 'Mi Mes', movimientos: 'Movimientos', analisis: 'Análisis', credito: 'Crédito', ajustes: 'Ajustes' };
+  if (S.tab === 'analisis' || S.tab === 'credito') S.tab = 'revision';
   var html = S.demo ? '<div class="banner"><b>Datos de ejemplo.</b> Conéctala en Ajustes para ver tus compras reales.</div>' : '';
-  if (titulos[S.tab]) html += '<h2 class="titulo-vista">' + titulos[S.tab] + '</h2>';
-  html += ({ resumen: vResumen, mimes: vMiMes, movimientos: vMovimientos, analisis: vAnalisis, credito: vCredito, ajustes: vAjustes })[S.tab](A);
+  html += cabecera(S.tab);
+  html += ({ resumen: vResumen, mimes: vMiMes, movimientos: vMovimientos, metas: vMetas, revision: vRevision, ajustes: vAjustes })[S.tab](A);
   $('#vista').innerHTML = html;
   quitarSplash();
 }
@@ -1378,6 +1485,13 @@ function quitarSplash() {
 setTimeout(quitarSplash, 8000);
 // El monto del mes cuenta desde 0
 function contarMonto() {
+  var h = document.querySelector('.hero-num[data-valor]');
+  if (h) {
+    var finH = +h.dataset.valor, t1 = null;
+    var pasoH = function (t) { t1 = t1 || t; var x = Math.min(1, (t - t1) / 1100), e = 1 - Math.pow(1 - x, 3);
+      h.innerHTML = '<small>R$</small>' + Math.round(finH * e).toLocaleString('pt-BR'); if (x < 1) requestAnimationFrame(pasoH); };
+    h.innerHTML = '<small>R$</small>0'; setTimeout(function () { requestAnimationFrame(pasoH); }, 250);
+  }
   var el = document.querySelector('.hero-monto[data-valor]');
   if (!el) return;
   var fin = +el.dataset.valor, t0 = null, dur = 900;
@@ -1403,17 +1517,116 @@ function gauge(p, nivel) {
   return '<svg class="gauge" viewBox="0 0 120 70" role="img" aria-label="Puntaje ' + p + ' de 100">' +
     '<path d="' + arco + '" pathLength="100" style="fill:none;stroke:var(--surface-2);stroke-width:11;stroke-linecap:round"/>' +
     '<path d="' + arco + '" pathLength="100" style="fill:none;stroke:' + col + ';stroke-width:11;stroke-linecap:round;stroke-dasharray:' + Math.max(p, 0.5) + ' 100"/>' +
-    '<text x="60" y="58" text-anchor="middle" style="fill:var(--ink);font:800 28px Manrope, sans-serif">' + p + '</text></svg>';
+    '<text x="60" y="58" text-anchor="middle" style="fill:var(--ink);font:800 28px Inter, sans-serif">' + p + '</text></svg>';
 }
 function rapida(attr, texto, ico, prim) {
   return '<button class="rapida' + (prim ? ' prim' : '') + '" ' + attr + '><span class="circ">' + ico + '</span>' + texto + '</button>';
 }
 
-// Inicio en 4 bloques: 1 número, 1 consejo, Tengo/Debo en dos cuadros, y lo que falta pagar
+// Encabezado de cada pestaña: etiqueta dorada + título grande en itálica (estilo editorial)
+var DIAS_S = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+function cabecera(tab) {
+  var f = new Date(hoy + 'T12:00:00Z');
+  var c = {
+    resumen: ['Tu día · ' + DIAS_S[f.getUTCDay()] + ' ' + (+hoy.slice(8, 10)) + ' ' + MESES[+hoy.slice(5, 7) - 1], 'Lo que importa<br>hoy.'],
+    mimes: ['Tu plan del mes', 'Tu sueldo,<br>en reales.'],
+    movimientos: ['Llega solo de tus bancos', 'Tus<br>movimientos.'],
+    metas: ['Con número y con fecha', 'Tus metas,<br>paso a paso.'],
+    revision: ['Revisión de tu dinero', 'Tu dinero,<br>en una mirada.'],
+    ajustes: ['Tu app', 'Ajustes.']
+  }[tab];
+  return c ? '<header class="cab-vista"><span class="etiqueta">✦ ' + c[0] + '</span><h2 class="titulo-ed">' + c[1] + '</h2></header>' : '';
+}
+
+// Hoy: el número real, lo de hoy (máx. 3), un consejo y el plan del mes en una línea
 function vResumen(A) {
-  return bloqueHoy() + consejoPrincipal() + bloqueDescribir() + duoTengoDebo() + filaPorPagar() +
+  return heroHoy() + bloqueTareas() + consejoPrincipal() + bloqueDescribir() + filaPorPagar() + filaDeudas() +
+    '<button class="link centro" data-accion="ver-detalle">' + (S.verDetalle ? 'Ocultar detalle ▴' : 'Ver detalle por banco ▾') + '</button>' +
     (S.verDetalle ? bloqueTengoDebo() + bloqueGastado(A) : '');
 }
+function heroHoy() {
+  var g = gastoDiario(datosPlan(), hoy), r = S.plan.length ? repartoSueldo(datosPlan(), hoy) : null;
+  var real = g.enCuentas !== null, q = real ? g.enCuentas : r && r.ingreso ? r.queda : null;
+  if (q === null) return bloqueHoy();
+  var cs = S.cuentas.filter(function (c) { return c.tipo !== 'tarjeta'; });
+  var fecha = cs.map(function (c) { return String(c.actualizado || ''); }).sort().pop();
+  var dias = diasHastaSueldo(S.movs, hoy);
+  var porDia = g.sinIngreso ? null : g.esperandoSueldo ? null : g.porDia;
+  return '<section class="card hero-hoy">' +
+    '<span class="etiqueta">Te queda</span>' +
+    '<div class="hero-num num' + (q < 0 ? ' rojo' : '') + '" data-valor="' + q + '"><small>R$</small>' + Math.round(q).toLocaleString('pt-BR') + '</div>' +
+    (real ? '<button class="rep-fuente centro" data-accion="ver-detalle-saldo">En tus cuentas · ' + (haceCuanto(fecha) || 'sin fecha') + ' · <u>corregir</u></button>' : '<span class="small muted">De tu sueldo, según tu plan</span>') +
+    '<div class="hero-duo">' +
+      '<div class="hero-mini"><span>Hoy puedes gastar</span><b class="num ' + (porDia > 0 ? 'lima' : porDia === null ? '' : 'rojo') + '">' +
+        (porDia === null ? (g.esperandoSueldo ? 'Al cobrar' : '—') : porDia > 0 ? R0(porDia) : 'Nada') + '</b></div>' +
+      '<div class="hero-mini"><span>Te pagan</span><b class="num">' + (dias === null ? '—' : dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : 'en ' + dias + ' días') + '</b></div>' +
+    '</div></section>';
+}
+function bloqueTareas() {
+  if (!S.plan.length) return '';
+  var t = tareasHoy(datosPlan(), hoy);
+  if (!t.length) return '<section class="card tareas"><h3 class="tit-ic"><span class="ico oro">⚡</span>Lo de hoy</h3><p class="small muted" style="margin:0">✓ Nada urgente hoy. Disfruta tu día.</p></section>';
+  return '<section class="card tareas"><h3 class="tit-ic"><span class="ico oro">⚡</span>Lo de hoy<small>' + t.length + (t.length === 1 ? ' cosa' : ' cosas') + '</small></h3>' +
+    t.map(function (x) {
+      var o = x.o, it = o.item;
+      return '<div class="tarea" data-accion="editar-item" data-id="' + esc(it.id) + '" role="button" tabindex="0">' +
+        '<button class="check" data-accion="pagar" data-id="' + esc(it.id) + '" data-mes="' + o.mes + '" data-n="' + (o.n || '') + '" data-monto="' + o.monto + '" aria-label="Marcar ' + esc(it.nombre) + ' como pagado"></button>' +
+        '<span class="t-txt"><b>Pagar ' + esc(nombrePago(o)) + '</b><span class="' + (x.orden < 0 ? 'rojo' : 'muted') + '">' + x.cuando + '</span></span>' +
+        '<span class="num t-m">' + R0(o.monto) + '</span></div>';
+    }).join('') + '</section>';
+}
+function filaDeudas() {
+  var D = resumenDeudas(datosPlan());
+  if (!D.activas.length) return '';
+  return '<button class="card cta" data-ir="metas"><span style="display:grid;gap:4px;min-width:0"><span class="eyebrow">Tus deudas</span>' +
+    '<span class="v-grande num">' + R0(D.falta) + '</span>' +
+    '<span class="small muted">' + D.activas.length + (D.activas.length === 1 ? ' deuda' : ' deudas') + (D.libreEn ? ' · sin deudas desde ' + nomMes(sumarMes(D.libreEn, 1), true) : '') + '</span>' +
+    '</span><span class="flecha-der">›</span></button>';
+}
+
+// Metas: deudas con fecha de fin, sueños, metas cumplidas y el año
+function vMetas() {
+  var d = datosPlan(), D = resumenDeudas(d), logros = metasCumplidas(d), mesHoy = mesDe(hoy);
+  var html = '';
+  if (D.activas.length) {
+    html += '<section class="card hero-hoy"><span class="etiqueta">Sin deudas desde</span>' +
+      '<div class="hero-num serif">' + cap(nomMes(sumarMes(D.libreEn, 1), true)) + '</div>' +
+      '<span class="small muted">Te faltan ' + R0(D.falta) + ' · llevas ' + Math.round(D.pct * 100) + '% pagado</span>' +
+      '<div class="barra-mes" style="width:100%"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div></section>';
+  }
+  html += modulo('deudas', { clase: 'mod-deudas', titulo: 'Deudas', total: R0(D.falta), sub: D.activas.length ? Math.round(D.pct * 100) + '% pagado · ' + D.activas.length + ' activas' : 'Sin deudas activas',
+    abierto: true, agregar: botonAgregar({ tipo: 'cuotas', grupo: 'Plazos' }),
+    cuerpo: D.activas.length ? '<ul class="rank">' + D.activas.sort(function (a, b) { return String(a.fin).localeCompare(String(b.fin)); }).map(function (x) {
+        return '<li class="tocable" data-accion="editar-item" data-id="' + esc(x.item.id) + '"><span class="nom">' + esc(x.item.nombre) + '</span><span class="num">' + R0(x.falta) + '</span>' +
+          '<span class="pista"><i style="width:' + (x.hechas / x.total * 100).toFixed(1) + '%"></i></span><span class="det">' + x.hechas + ' de ' + x.total + ' cuotas · ' + R0(num(x.item.monto)) + ' c/u' +
+          (x.fin ? ' · <b>termina en ' + nomMes(x.fin, true) + '</b>' : '') + '</span></li>';
+      }).join('') + '</ul>' : '<p class="small muted" style="margin:0">No tienes deudas en cuotas. 🎉</p>' });
+
+  var activos = S.suenos.filter(noCumplido);
+  html += modulo('suenos', { clase: 'mod-suenos', titulo: 'Sueños', total: R0(suma(activos, function (x) { return num(x.ahorrado); })), sub: activos.length ? activos.length + ' en camino · ahorrado' : 'Agrega lo que quieres lograr',
+    abierto: true, agregar: botonAgregar(null, 'nuevo-sueno'),
+    cuerpo: activos.length ? '<ul class="rank">' + activos.map(function (x) {
+      var pr = num(x.precio) ? num(x.ahorrado) / num(x.precio) : 0;
+      return '<li><span class="nom tocable" data-accion="editar-sueno" data-id="' + esc(x.id) + '">' + esc((x.emoji ? x.emoji + ' ' : '') + x.nombre) + '</span>' +
+        '<button class="mini-btn" data-accion="ahorrar" data-id="' + esc(x.id) + '">＋ Ahorro</button>' +
+        '<span class="pista"><i style="width:' + (pr * 100).toFixed(1) + '%"></i></span><span class="det">' + R0(num(x.ahorrado)) + ' de ' + R0(num(x.precio)) +
+        ' · faltan ' + R0(Math.max(0, num(x.precio) - num(x.ahorrado))) + '</span></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>' });
+
+  html += modulo('metas', { clase: 'mod-metas', titulo: 'Metas cumplidas', total: '🏆 ' + logros.length,
+    cuerpo: logros.length ? '<ul class="logros">' + logros.map(function (l) {
+      return '<li><span class="ok-ic">✓</span><div><b>' + esc(l.titulo) + '</b><span class="small muted">' + esc(l.detalle) + (l.fecha ? ' · ' + fechaCorta(l.fecha) : '') + '</span></div></li>';
+    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>' });
+
+  html += modulo('anio', { titulo: 'Mi año', sub: 'Lo que entra, pagas y sobra cada mes',
+    cuerpo: '<div class="tabla-wrap"><table><thead><tr><th>Mes</th><th>Entra</th><th>Pagar</th><th>Sobra</th></tr></thead><tbody>' +
+    miAnio(d, mesHoy, 12).map(function (f) {
+      return '<tr><td>' + cap(nomMes(f.mes, true)) + '</td><td>' + R0(f.entra) + '</td><td>' + R0(f.pagar) + '</td><td style="color:' + (f.sobra >= 0 ? 'var(--good)' : 'var(--bad)') + '">' + R0(f.sobra) + '</td></tr>';
+    }).join('') + '</tbody></table></div>' });
+  return html;
+}
+// Revisión: el puntaje (crédito) y el análisis del gasto, en una sola pestaña
+function vRevision(A) { return vCredito(A) + vAnalisis(A); }
 function consejoPrincipal() {
   var o = consejosOcultos(), ses = S.ocultosSesion || {}, ahora = Date.now();
   var c = consejos(datosPlan(), hoy).filter(function (x) { return x.nivel === 'riesgo' || !((o[x.texto] && o[x.texto] > ahora) || ses[x.texto]); });
@@ -1440,9 +1653,8 @@ function filaPorPagar() {
   if (r.ingreso) {
     var seg = [['pagado', r.pagado], ['ya', r.pagarYa], ['espera', r.puedeEsperar], ['vida', r.vida + r.colchon], ['gustos', r.totalGustos], ['libre', r.libre]].filter(function (x) { return x[1] > 0; });
     return '<button class="card cta rep-mini" data-ir="mimes"><span style="display:grid;gap:8px;min-width:0;width:100%">' +
-      '<span class="card-cab"><span class="eyebrow">Te queda de tu sueldo</span><span class="flecha-der">›</span></span>' +
-      (function () { var g = gastoDiario(datosPlan(), hoy), q = r.cobrado && g.enCuentas !== null ? g.enCuentas : r.queda;
-        return '<span class="v-grande num' + (q < 0 ? ' rojo' : '') + '">' + R0(q) + ' <small class="small muted" style="font-weight:500">de ' + R0(r.ingreso) + '</small></span>'; })() +
+      '<span class="card-cab"><span class="eyebrow">Tu plan del mes</span><span class="flecha-der">›</span></span>' +
+      '<span class="small muted">' + (r.cobrado ? 'Recibiste' : 'Esperas') + ' <b style="color:var(--ink)">' + R0(r.ingreso) + '</b> · ya pagaste <b style="color:var(--ink)">' + R0(r.pagado + r.gustosHechos) + '</b></span>' +
       '<span class="rep-barra">' + seg.map(function (x) { return '<i style="flex:' + x[1] + ';background:' + COL[x[0]] + '"></i>'; }).join('') + '</span>' +
       '<span class="rep-mini-fila">' + (r.pagarYa ? '<span><b style="color:var(--bad)">' + R0(r.pagarYa) + '</b> pagar ya</span>' : '<span>✓ nada urgente</span>') +
       (r.falta ? '<span><b style="color:var(--bad)">faltan ' + R0(r.falta) + '</b></span>' : '<span><b style="color:var(--lima)">' + R0(r.libre) + '</b> libres</span>') + '</span></span></button>';
@@ -1928,7 +2140,7 @@ function bloqueTengoDebo() {
 
   var filasDeuda = D.activas.slice(0, 4).map(function (x) {
     return '<div class="fila-deuda"><span class="fb-nom">' + esc(x.item.nombre) + '<span class="fb-sub">' + (x.total - x.hechas) + ' cuota' + (x.total - x.hechas === 1 ? '' : 's') + ' de ' + R0(num(x.item.monto)) + '</span></span><span class="fb-monto">' + R0(x.falta) + '</span></div>';
-  }).join('') + (D.activas.length > 4 ? '<button class="link" data-ir="mimes">Ver las ' + D.activas.length + ' deudas</button>' : '');
+  }).join('') + (D.activas.length > 4 ? '<button class="link" data-ir="metas">Ver las ' + D.activas.length + ' deudas</button>' : '');
 
   return '<section class="dos-lados">' +
     '<div class="lado tengo"><div class="lado-cab"><span class="eyebrow">Tengo</span><span class="lado-total' + (tengo < 0 ? ' rojo' : '') + '">' + R0(tengo) + '</span></div>' +
@@ -2013,7 +2225,7 @@ function vMiMes() {
       (conectado ? '<button class="btn prim" data-accion="sembrar">Cargar mi plan de Mi Dinero</button>' : '') +
       '<button class="btn' + (conectado ? '' : ' prim') + '" data-accion="nuevo-item">＋ Agregar pago</button></div></section>';
   }
-  var V = vistaMes(d, M, mesHoy), D = resumenDeudas(d), logros = metasCumplidas(d), sobra = V.sobra >= 0;
+  var V = vistaMes(d, M, mesHoy), sobra = V.sobra >= 0;
   var esHoy = M === mesHoy;
   var html = nav + (esHoy ? bloqueReparto() : '') + (esHoy ? '' :
     '<section class="card">' +
@@ -2045,35 +2257,7 @@ function vMiMes() {
   html += modulo('pagados', { titulo: 'Pagados', clase: 'mod-pagados', total: R0(V.pagado), sub: V.pagados.length + ' pagos', agregar: botonAgregar({ pagado: true }),
     cuerpo: V.pagados.length ? '<div class="lista">' + V.pagados.map(filaPagado).join('') + '</div>' : '<p class="small muted" style="margin:0">Cuando marques ✓ un pago, aparece aquí.</p>' });
 
-  html += modulo('deudas', { clase: 'mod-deudas', titulo: 'Deudas', total: R0(D.falta), sub: D.activas.length ? Math.round(D.pct * 100) + '% pagado · ' + D.activas.length + ' activas' : 'Sin deudas activas',
-    agregar: botonAgregar({ tipo: 'cuotas', grupo: 'Plazos' }),
-    cuerpo: D.activas.length ? '<div class="barra-mes"><i style="width:' + (D.pct * 100).toFixed(1) + '%"></i></div>' +
-      '<ul class="rank">' + D.activas.map(function (x) {
-        return '<li class="tocable" data-accion="editar-item" data-id="' + esc(x.item.id) + '"><span class="nom">' + esc(x.item.nombre) + '</span><span class="num">' + R0(x.falta) + '</span>' +
-          '<span class="pista"><i style="width:' + (x.hechas / x.total * 100).toFixed(1) + '%"></i></span><span class="det">' + x.hechas + ' de ' + x.total + ' cuotas · ' + R0(num(x.item.monto)) + ' c/u</span></li>';
-      }).join('') + '</ul>' : '<p class="small muted" style="margin:0">No tienes deudas en cuotas. 🎉</p>' });
-
-  var activos = S.suenos.filter(noCumplido);
-  html += modulo('suenos', { clase: 'mod-suenos', titulo: 'Sueños', total: R0(suma(activos, function (x) { return num(x.ahorrado); })), sub: activos.length ? activos.length + ' en camino · ahorrado' : 'Agrega lo que quieres lograr',
-    agregar: botonAgregar(null, 'nuevo-sueno'),
-    cuerpo: activos.length ? '<ul class="rank">' + activos.map(function (x) {
-      var pr = num(x.precio) ? num(x.ahorrado) / num(x.precio) : 0;
-      return '<li><span class="nom tocable" data-accion="editar-sueno" data-id="' + esc(x.id) + '">' + esc((x.emoji ? x.emoji + ' ' : '') + x.nombre) + '</span>' +
-        '<button class="mini-btn" data-accion="ahorrar" data-id="' + esc(x.id) + '">＋ Ahorro</button>' +
-        '<span class="pista"><i style="width:' + (pr * 100).toFixed(1) + '%"></i></span><span class="det">' + R0(num(x.ahorrado)) + ' de ' + R0(num(x.precio)) +
-        ' · faltan ' + R0(Math.max(0, num(x.precio) - num(x.ahorrado))) + '</span></li>';
-    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Agrega algo que quieras comprar y ve sumando lo que ahorras.</p>' });
-
-  html += modulo('metas', { clase: 'mod-metas', titulo: 'Metas cumplidas', total: '🏆 ' + logros.length,
-    cuerpo: logros.length ? '<ul class="logros">' + logros.map(function (l) {
-      return '<li><span class="ok-ic">✓</span><div><b>' + esc(l.titulo) + '</b><span class="small muted">' + esc(l.detalle) + (l.fecha ? ' · ' + fechaCorta(l.fecha) : '') + '</span></div></li>';
-    }).join('') + '</ul>' : '<p class="small muted" style="margin:0">Aquí van a aparecer tus deudas terminadas y tus sueños cumplidos.</p>' });
-
-  html += modulo('anio', { titulo: 'Mi año', sub: 'Lo que entra, pagas y sobra cada mes',
-    cuerpo: '<div class="tabla-wrap"><table><thead><tr><th>Mes</th><th>Entra</th><th>Pagar</th><th>Sobra</th></tr></thead><tbody>' +
-    miAnio(d, mesHoy, 12).map(function (f) {
-      return '<tr><td>' + cap(nomMes(f.mes, true)) + '</td><td>' + R0(f.entra) + '</td><td>' + R0(f.pagar) + '</td><td style="color:' + (f.sobra >= 0 ? 'var(--good)' : 'var(--bad)') + '">' + R0(f.sobra) + '</td></tr>';
-    }).join('') + '</tbody></table></div>' });
+  html += '<button class="card cta" data-ir="metas"><span style="display:grid;gap:4px"><span class="eyebrow">Deudas y sueños</span><span class="small muted">Ahora están en la pestaña Metas, con su fecha de fin</span></span><span class="flecha-der">›</span></button>';
   return html;
 }
 
@@ -2431,7 +2615,10 @@ function cerrarDlg() { var d = $('#dlg'); if (d.open) d.close(); d.style.transfo
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-tab],[data-ir],[data-mov],[data-periodo],[data-orden],[data-metodo],[data-movvista],[data-plegar],[data-accion]');
   if (!t) return;
-  if (t.dataset.tab || t.dataset.ir) { S.tab = t.dataset.tab || t.dataset.ir; render(); scrollTo(0, 0); }
+  if (t.dataset.tab || t.dataset.ir) {
+    var antes = S.tab; S.tab = t.dataset.tab || t.dataset.ir; render(); scrollTo(0, 0);
+    if (antes !== S.tab && !sinMovimiento) { var v = $('#vista'); v.classList.remove('entra'); void v.offsetWidth; v.classList.add('entra'); setTimeout(function () { v.classList.remove('entra'); }, 900); }
+  }
   else if (t.dataset.mov) abrirMov(t.dataset.mov);
   else if (t.dataset.periodo) { S.periodo = t.dataset.periodo; render(); }
   else if (t.dataset.orden) { S.planOrden = t.dataset.orden; render(); }
