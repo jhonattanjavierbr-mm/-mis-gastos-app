@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1794941708459";</script>
+<script>window.APP_VERSION="1794942423667";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -1017,8 +1017,12 @@ function gastoDiario(d, hoy) {
   var r = { presupuesto: presupuesto, variable: variable, disponible: disponible, dias: dias, porDia: redondear(disponible / dias),
     sinIngreso: !V.entra, esperandoSueldo: esperando, enCuentas: enCuentas, limitadoPorCuentas: false, pendienteBanco: pendiente };
   if (!esperando && enCuentas !== null) {
-    var real = redondear(enCuentas - V.falta);
-    if (real < r.disponible) { r.disponible = real; r.porDia = redondear(real / dias); r.limitadoPorCuentas = true; }
+    // Manda la plata real: lo que hay en cuentas menos lo que falta pagar, repartido hasta el próximo sueldo
+    // (aunque el plan del mes ya esté pasado, si hay plata real hay un número diario realista)
+    var real = redondear(enCuentas - V.falta), hasta = diasHastaSueldo(movs, hoy);
+    if (hasta) { r.dias = hasta; r.hastaSueldo = true; }
+    r.limitadoPorCuentas = real < r.disponible;
+    r.disponible = real; r.porDia = redondear(real / r.dias);
   }
   return r;
 }
