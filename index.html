@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px)}html,body{background:#0b1610}</style>
-<script>window.APP_VERSION="1794939811316";</script>
+<script>window.APP_VERSION="1794941708459";</script>
 </head>
 <body>
 <title>Mis Gastos</title>
@@ -917,7 +917,7 @@ function finDeuda(it) {
 
 /** Días hasta el próximo sueldo: el mismo día del mes del último ingreso grande (≥ R$ 3.000). null si no hay. */
 function diasHastaSueldo(movs, hoy) {
-  var ult = (movs || []).filter(function (m) { return m.categoria === 'Ingreso' && m.monto <= -3000; })
+  var ult = (movs || []).filter(esSueldo)
     .map(function (m) { return m.fecha; }).sort().pop();
   if (!ult) return null;
   var dia = +ult.slice(8, 10), M = mesDe(hoy);
@@ -976,11 +976,15 @@ function usoTarjeta(c) {
   return Math.max(0, num(c.saldo));
 }
 
+/** Sueldo: ingreso grande (≥ R$ 3.000) que no es un préstamo que te depositaron (eso es deuda, no sueldo). */
+var RE_PRESTAMO = /empr[eé]stimo|emprestimo|pr[eé]stamo|cr[eé]dito pessoal|credito pessoal|consignado|financiamento/i;
+function esSueldo(m) { return m.categoria === 'Ingreso' && m.monto <= -3000 && !RE_PRESTAMO.test((m.comercio || '') + ' ' + (m.nota || '')); }
+
 /** Ingreso registrado a mano que el banco ya informó (≤ 5% de diferencia y ≤ 5 días): es el mismo, no cuenta dos veces. */
 function ingresoYaDelBanco(m, movs) {
   if (!/^manual$/i.test(m.origen || '') || m.categoria !== 'Ingreso') return false;
   return movs.some(function (b) {
-    if (b === m || b.categoria !== 'Ingreso' || /^manual$/i.test(b.origen || '') || !(b.monto <= -3000)) return false;
+    if (b === m || !esSueldo(b) || /^manual$/i.test(b.origen || '')) return false;
     var dias = Math.abs((Date.parse(b.fecha + 'T12:00:00Z') - Date.parse(m.fecha + 'T12:00:00Z')) / 86400000);
     return dias <= 5 && Math.abs(b.monto - m.monto) <= Math.abs(m.monto) * 0.05;
   });
@@ -1001,7 +1005,7 @@ function gastoDiario(d, hoy) {
   }), function (m) { return m.monto; }));
   var presupuesto = redondear(V.entra - V.pagar), disponible = redondear(presupuesto - variable);
   var dias = diasDelMes(M) - +hoy.slice(8, 10) + 1;
-  var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000 && !ingresoYaDelBanco(m, movs); });
+  var cobro = movs.filter(function (m) { return mesDe(m.fecha) === M && esSueldo(m) && !ingresoYaDelBanco(m, movs); });
   var cuentas = (d.cuentas || []).filter(function (c) { return c.tipo !== 'tarjeta'; });
   // Un ingreso que registraste tú y el banco todavía no informó por Open Finance: lo sumamos a lo que hay en cuentas
   // …salvo que después corregiste a mano el saldo de esa cuenta (el saldo nuevo ya lo incluye)
@@ -1028,7 +1032,7 @@ function gastoDiario(d, hoy) {
 function repartoSueldo(d, hoy) {
   var M = mesDe(hoy), dia = +hoy.slice(8, 10), V = vistaMes(d, M, M), movs = d.movs || [];
   var esGusto = function (o) { return /^gustos?$/i.test(o.item.grupo || ''); };
-  var cobros = movs.filter(function (m) { return mesDe(m.fecha) === M && m.categoria === 'Ingreso' && m.monto <= -3000 && !ingresoYaDelBanco(m, movs); });
+  var cobros = movs.filter(function (m) { return mesDe(m.fecha) === M && esSueldo(m) && !ingresoYaDelBanco(m, movs); });
   var real = redondear(suma(cobros, function (m) { return -m.monto; }));
   var ingreso = real || V.entra;
   var vence = function (o) { return num(o.item.vence_dia); };
